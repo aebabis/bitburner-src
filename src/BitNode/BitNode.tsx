@@ -570,13 +570,13 @@ export function initBitNodes() {
         <br />
         As Megacorporations rised, all of humanity had to leave their jobs, their life, their homes, their dreams... to
         provide food and shelter to their families, by the only way possible: serving those who ruined their lives. The
-        only goal Megacorporations have is to improve their security systems and economy in order to impose themselves to
-        their competitors...
+        only goal Megacorporations have is to improve their security systems and economy in order to impose themselves
+        to their competitors...
         <br />
         <br />
-        In this BitNode, Megacorporations have taken over the planet, and thus economy, jobs, and of course, the well-desired
-        augmentations reside on their strongholds. Will you be able to climb through the ranks of the corporations and become
-        the boss of the world?
+        In this BitNode, Megacorporations have taken over the planet, and thus economy, jobs, and of course, the
+        well-desired augmentations reside on their strongholds. Will you be able to climb through the ranks of the
+        corporations and become the boss of the world?
         <br />
         <br />
         {upgradeTextForBN(16)}
@@ -586,19 +586,13 @@ export function initBitNodes() {
       <>
         This Source-File grants the following benefits:
         <ul>
-          <li>
-            Level 1: ****
-          </li>
-          <li>
-            Level 2: ****
-          </li>
-          <li>
-            Level 3: ****
-          </li>
+          <li>Level 1: ****</li>
+          <li>Level 2: ****</li>
+          <li>Level 3: ****</li>
         </ul>
       </>
     ),
-  )
+  );
 }
 
 export const defaultMultipliers = new BitNodeMultipliers();
@@ -1201,7 +1195,7 @@ export function getBitNodeMultipliers(n: number, lvl: number): BitNodeMultiplier
         StaneksGiftExtraSize: -2,
 
         WorldDaemonDifficulty: 2,
-    })
+      });
     }
     default: {
       throw new Error("Invalid BitNodeN");
