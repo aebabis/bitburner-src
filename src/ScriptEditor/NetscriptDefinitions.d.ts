@@ -9857,6 +9857,25 @@ export interface BossAPI {
 }
 
 /**
+ * Boss API
+ *
+ * @remarks
+ * You need SF16.1 in order to access this API
+ */
+export interface BossAPI {
+  /** Solve a puzzle
+   *
+   * @remarks
+   * RAM cost: 10 GB
+   *
+   * @param puzzleID - ID of the puzzle to solve
+   * @param solution - The solution to the puzzle
+   * @returns A string with a list of the rewards or an empty string on failure
+   */
+  solvePuzzle(puzzleID: number, solution: string): string;
+}
+
+/**
  * Corporation Office API
  *
  * @remarks

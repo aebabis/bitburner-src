@@ -184,6 +184,17 @@ Player must have at least this rank in the Bladeburner Division.
 </td></tr>
 <tr><td>
 
+[BossAPI](./bitburner.bossapi.md)
+
+
+</td><td>
+
+Boss API
+
+
+</td></tr>
+<tr><td>
+
 [CityRequirement](./bitburner.cityrequirement.md)
 
 
