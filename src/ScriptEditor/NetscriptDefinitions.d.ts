@@ -9837,32 +9837,50 @@ type NSEnums = {
   GangTaskName: GangTaskNameEnumType;
 };
 
-/** 
- * Boss API
- * 
- * @remarks
- * You need SF16.1 in order to access this API
-*/
-export interface BossAPI {
-  /** Solve a puzzle
-   * 
-   * @remarks
-   * RAM cost: 10 GB
-   * 
-   * @param puzzleID - ID of the puzzle to solve
-   * @param solution - The solution to the puzzle
-   * @returns A string with a list of the rewards or an empty string on failure
-   */
-  solvePuzzle(puzzleID: number, solution: string): string
+/** Defines a Meeting */
+export interface Meeting {
+  id: number;
+  title: string;
+  startTime: string;
+  finishTime: string;
+  attendanceMults: number;
+  nonAttendanceMults?: number;
 }
 
+/** Company Calendar */
+export interface CompanyCalendar {
+  /** Get all the information of the next appointments
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  getAppointments(): Meeting[];
+
+  /** French for répondez s'il vous plaît
+   *
+   * @param meetingID - The ID of the puzzle
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  // rsvp(meetingID: number): null;
+
+  /** Cancel a specified meeting
+   *
+   * @param meetingID - the ID of the meeting to cancel
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  // cancelMeeting(meetingID: number): void;
+}
 /**
- * Boss API
+ * Company API
  *
  * @remarks
  * You need SF16.1 in order to access this API
  */
-export interface BossAPI {
+export interface Boss {
   /** Solve a puzzle
    *
    * @remarks
@@ -9873,6 +9891,9 @@ export interface BossAPI {
    * @returns A string with a list of the rewards or an empty string on failure
    */
   solvePuzzle(puzzleID: number, solution: string): string;
+
+  /** Calendar */
+  calendar: CompanyCalendar;
 }
 
 /**

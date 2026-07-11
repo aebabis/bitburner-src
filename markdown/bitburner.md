@@ -184,12 +184,12 @@ Player must have at least this rank in the Bladeburner Division.
 </td></tr>
 <tr><td>
 
-[BossAPI](./bitburner.bossapi.md)
+[Boss](./bitburner.boss.md)
 
 
 </td><td>
 
-Boss API
+Company API
 
 
 </td></tr>
@@ -223,6 +223,17 @@ Cloud API
 </td><td>
 
 Coding Contract API
+
+
+</td></tr>
+<tr><td>
+
+[CompanyCalendar](./bitburner.companycalendar.md)
+
+
+</td><td>
+
+Company Calendar
 
 
 </td></tr>
@@ -971,6 +982,17 @@ Player must be at this location within a city.
 </td><td>
 
 Material in a warehouse
+
+
+</td></tr>
+<tr><td>
+
+[Meeting](./bitburner.meeting.md)
+
+
+</td><td>
+
+Defines a Meeting
 
 
 </td></tr>
