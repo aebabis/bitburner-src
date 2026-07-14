@@ -189,7 +189,29 @@ Player must have at least this rank in the Bladeburner Division.
 
 </td><td>
 
-Company API
+Boss API
+
+
+</td></tr>
+<tr><td>
+
+[BossAgents](./bitburner.bossagents.md)
+
+
+</td><td>
+
+Agent API. Allows you to interact with your agents
+
+
+</td></tr>
+<tr><td>
+
+[BossCalendar](./bitburner.bosscalendar.md)
+
+
+</td><td>
+
+Company Calendar
 
 
 </td></tr>
@@ -223,17 +245,6 @@ Cloud API
 </td><td>
 
 Coding Contract API
-
-
-</td></tr>
-<tr><td>
-
-[CompanyCalendar](./bitburner.companycalendar.md)
-
-
-</td><td>
-
-Company Calendar
 
 
 </td></tr>
@@ -2091,6 +2102,25 @@ Warning: Spoiler ahead. This enum contains names of \*\*all\*\* factions. If you
 <tr><td>
 
 [FilenameOrPID](./bitburner.filenameorpid.md)
+
+
+</td><td>
+
+
+
+</td></tr>
+<tr><td>
+
+[FixedSchedules](./bitburner.fixedschedules.md)
+
+
+</td><td>
+
+
+</td></tr>
+<tr><td>
+
+[FixedSchedulesEnumType](./bitburner.fixedschedulesenumtype.md)
 
 
 </td><td>

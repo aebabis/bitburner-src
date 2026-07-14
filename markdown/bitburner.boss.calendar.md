@@ -9,5 +9,5 @@ Calendar
 **Signature:**
 
 ```typescript
-calendar: CompanyCalendar;
+calendar: BossCalendar;
 ```

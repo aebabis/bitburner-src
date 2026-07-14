@@ -4,7 +4,7 @@
 
 ## Boss interface
 
-Company API
+Boss API
 
 **Signature:**
 
@@ -41,6 +41,25 @@ Description
 </th></tr></thead>
 <tbody><tr><td>
 
+[agent](./bitburner.boss.agent.md)
+
+
+</td><td>
+
+
+</td><td>
+
+[BossAgents](./bitburner.bossagents.md)
+
+
+</td><td>
+
+Agents
+
+
+</td></tr>
+<tr><td>
+
 [calendar](./bitburner.boss.calendar.md)
 
 
@@ -49,7 +68,7 @@ Description
 
 </td><td>
 
-[CompanyCalendar](./bitburner.companycalendar.md)
+[BossCalendar](./bitburner.bosscalendar.md)
 
 
 </td><td>
@@ -74,6 +93,61 @@ Description
 
 </th></tr></thead>
 <tbody><tr><td>
+
+[addBreakTime(timezone)](./bitburner.boss.addbreaktime.md)
+
+
+</td><td>
+
+Adds a recess break time to your schedule
+
+
+</td></tr>
+<tr><td>
+
+[changeFixedSchedule(fixedBreak, timezone)](./bitburner.boss.changefixedschedule.md)
+
+
+</td><td>
+
+Changes your fixed schedule
+
+
+</td></tr>
+<tr><td>
+
+[getRsvps()](./bitburner.boss.getrsvps.md)
+
+
+</td><td>
+
+To add definition
+
+
+</td></tr>
+<tr><td>
+
+[hasAccess()](./bitburner.boss.hasaccess.md)
+
+
+</td><td>
+
+Checks if you have access to the API
+
+
+</td></tr>
+<tr><td>
+
+[nextUpdate()](./bitburner.boss.nextupdate.md)
+
+
+</td><td>
+
+Returns the number of milliseconds to the next update
+
+
+</td></tr>
+<tr><td>
 
 [solvePuzzle(puzzleID, solution)](./bitburner.boss.solvepuzzle.md)
 

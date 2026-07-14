@@ -11,6 +11,26 @@ export function NetscriptCompany(): InternalAPI<BossAPI> {
         const solution = helpers.string(ctx, "solution", _solution);
         return "Yess! Example text";
       },
+    changeFixedSchedule:
+      (ctx: NetscriptContext) =>
+      (_fixedBreak, _timezone): void => {
+        // Change fixed schedule logic
+      },
+    addBreakTime:
+      (ctx: NetscriptContext) =>
+      (_timezone): void => {
+        // Adding break time logic
+      },
+    getRsvps: (ctx: NetscriptContext) => (): void => {
+      // What goes in here?
+    },
+    hasAccess: (ctx: NetscriptContext) => (): boolean => {
+      return helpers.checkBossAPIAccess(ctx);
+    },
+    nextUpdate: (ctx: NetscriptContext) => (): number => {
+      // Next update logic
+      return 0;
+    },
     calendar: {
       getAppointments: (ctx: NetscriptContext) => (): Meeting[] => {
         return [
@@ -22,6 +42,25 @@ export function NetscriptCompany(): InternalAPI<BossAPI> {
             attendanceMults: 1.6,
           },
         ];
+      },
+      rsvp:
+        (ctx: NetscriptContext) =>
+        (_meetingID): void => {
+          // Answer a meeting logic
+        },
+      cancelMeeting:
+        (ctx: NetscriptContext) =>
+        (_meetingID): void => {
+          // Cancel a meeting logic
+        },
+    },
+    agent: {
+      getNumAgents: (ctx: NetscriptContext) => (): number => {
+        // Return the number of agents
+        return 0;
+      },
+      hireAgent: (ctx: NetscriptContext) => (): void => {
+        // Hire an agent here
       },
     },
   };
