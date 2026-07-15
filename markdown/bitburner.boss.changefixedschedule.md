@@ -9,7 +9,7 @@ Changes your fixed schedule
 **Signature:**
 
 ```typescript
-changeFixedSchedule(fixedBreak: FixedSchedules, timezone: Date): void;
+changeFixedSchedule(fixedBreak: MeetingFixedBreaks , timezone: Date): void;
 ```
 
 ## Parameters
@@ -37,7 +37,7 @@ fixedBreak
 
 </td><td>
 
-[FixedSchedules](./bitburner.fixedschedules.md)
+[MeetingFixedBreaks](./bitburner.meetingfixedbreaks.md)
 
 
 </td><td>

@@ -1,8 +1,9 @@
 import { Boss as BossAPI, Meeting } from "@nsdefs";
-import { InternalAPI, NetscriptContext } from "src/Netscript/APIWrapper";
-import { helpers } from "src/Netscript/NetscriptHelpers";
+import { InternalAPI, NetscriptContext } from "../Netscript/APIWrapper";
+import { helpers } from "../Netscript/NetscriptHelpers";
+import { getEnumHelper } from "../utils/EnumHelper";
 
-export function NetscriptCompany(): InternalAPI<BossAPI> {
+export function NetscriptBoss(): InternalAPI<BossAPI> {
   return {
     solvePuzzle:
       (ctx: NetscriptContext) =>
@@ -14,6 +15,7 @@ export function NetscriptCompany(): InternalAPI<BossAPI> {
     changeFixedSchedule:
       (ctx: NetscriptContext) =>
       (_fixedBreak, _timezone): void => {
+        const fixedBreak = getEnumHelper("MeetingFixedBreaks").nsGetMember(ctx, _fixedBreak);
         // Change fixed schedule logic
       },
     addBreakTime:
@@ -46,11 +48,13 @@ export function NetscriptCompany(): InternalAPI<BossAPI> {
       rsvp:
         (ctx: NetscriptContext) =>
         (_meetingID): void => {
+          const meetingID = helpers.number(ctx, "meetingID", _meetingID);
           // Answer a meeting logic
         },
       cancelMeeting:
         (ctx: NetscriptContext) =>
         (_meetingID): void => {
+          const meetingID = helpers.number(ctx, "meetingID", _meetingID);
           // Cancel a meeting logic
         },
     },

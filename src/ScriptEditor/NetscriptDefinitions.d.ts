@@ -7266,6 +7266,11 @@ export interface NS {
   readonly grafting: Grafting;
 
   /**
+   * Namespace for {@link Boss | boss} functions. Contains spoilers.
+   */
+  readonly boss: Boss;
+
+  /**
    * Arguments passed into the script.
    *
    * These arguments can be accessed as a normal array by using the `[]` operator
@@ -9720,6 +9725,32 @@ type ProgramNameEnumType = {
 type ProgramName = _ValueOf<ProgramNameEnumType>;
 
 /** @public */
+type MeetingTitleEnumType = {
+  DailyStandup: "Daily Standup";
+  ComplianceTraining: "Compliance Training";
+  CheckEmail: "Check Email";
+  Brainstorm: "Group Brainstorm Session";
+  NewInitiative: "Outline New Initiative";
+  Interview: "Candidate Interview";
+  Presentation: "Slide Presentation";
+  SoftwareDemo: "Software Demo";
+  Lunch: "Lunch";
+  Recess: "Recess";
+};
+
+/** @public */
+type MeetingTitle = _ValueOf<MeetingTitleEnumType>;
+
+/** @public */
+type MeetingFixedBreaksEnumType = {
+  Lunch: MeetingTitleEnumType["Lunch"];
+  Recess: MeetingTitleEnumType["Recess"];
+};
+
+/** @public */
+type MeetingFixedBreaks = _ValueOf<MeetingFixedBreaksEnumType>;
+
+/** @public */
 type CodingContractNameEnumType = {
   FindLargestPrimeFactor: "Find Largest Prime Factor";
   SubarrayWithMaximumSum: "Subarray with Maximum Sum";
@@ -9835,7 +9866,7 @@ type NSEnums = {
   DarknetResponseCode: DarknetResponseCodeType;
   ProgramName: ProgramNameEnumType;
   GangTaskName: GangTaskNameEnumType;
-  FixedSchedules: FixedSchedulesEnumType;
+  MeetingTitle: MeetingTitleEnumType;
 };
 
 /** Defines a Meeting */
@@ -9847,14 +9878,6 @@ export interface Meeting {
   attendanceMults: number;
   nonAttendanceMults?: number;
 }
-
-/** @public */
-type FixedSchedulesEnumType = {
-  lunch: "lunch";
-  recess: "recess";
-};
-
-type FixedSchedules = _ValueOf<FixedSchedulesEnumType>;
 
 /** Company Calendar */
 export interface BossCalendar {
@@ -9931,7 +9954,7 @@ export interface Boss {
    * RAM cost: 4 GB
    * Change param timezone!!!
    */
-  changeFixedSchedule(fixedBreak: FixedSchedules, timezone: Date): void;
+  changeFixedSchedule(fixedBreak: MeetingFixedBreaks, timezone: Date): void;
 
   /**
    * Adds a recess break time to your schedule
@@ -9939,7 +9962,7 @@ export interface Boss {
    * @param timezone - the timezone to add the break to
    *
    * @remarks
-   * RAM cost: 5 GB
+   * RAM cost: 4 GB
    */
   addBreakTime(timezone: Date): void;
 

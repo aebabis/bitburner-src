@@ -2111,25 +2111,6 @@ Warning: Spoiler ahead. This enum contains names of \*\*all\*\* factions. If you
 </td></tr>
 <tr><td>
 
-[FixedSchedules](./bitburner.fixedschedules.md)
-
-
-</td><td>
-
-
-</td></tr>
-<tr><td>
-
-[FixedSchedulesEnumType](./bitburner.fixedschedulesenumtype.md)
-
-
-</td><td>
-
-
-
-</td></tr>
-<tr><td>
-
 [FragmentEnumType](./bitburner.fragmentenumtype.md)
 
 
@@ -2287,6 +2268,46 @@ Locations of gym
 </td><td>
 
 Names of all locations
+
+
+</td></tr>
+<tr><td>
+
+[MeetingFixedBreaks](./bitburner.meetingfixedbreaks.md)
+
+
+</td><td>
+
+
+
+</td></tr>
+<tr><td>
+
+[MeetingFixedBreaksEnumType](./bitburner.meetingfixedbreaksenumtype.md)
+
+
+</td><td>
+
+
+
+</td></tr>
+<tr><td>
+
+[MeetingTitle](./bitburner.meetingtitle.md)
+
+
+</td><td>
+
+
+
+</td></tr>
+<tr><td>
+
+[MeetingTitleEnumType](./bitburner.meetingtitleenumtype.md)
+
+
+</td><td>
+
 
 
 </td></tr>
