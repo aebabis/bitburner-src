@@ -9,8 +9,8 @@
 
 ```typescript
 type MeetingFixedBreaksEnumType = {
-  Lunch: MeetingTitleEnumType["Lunch"],
-  Recess: MeetingTitleEnumType["Recess"],
+  Lunch: MeetingTitleEnumType["Lunch"];
+  Recess: MeetingTitleEnumType["Recess"];
 };
 ```
 **References:** [MeetingTitleEnumType](./bitburner.meetingtitleenumtype.md)

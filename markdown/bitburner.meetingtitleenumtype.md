@@ -9,15 +9,15 @@
 
 ```typescript
 type MeetingTitleEnumType = {
-  DailyStandup: "Daily Standup",
-  ComplianceTraining: "Compliance Training",
-  CheckEmail: "Check Email",
-  Brainstorm: "Group Brainstorm Session",
-  NewInitiative: "Outline New Initiative",
-  Interview: "Candidate Interview",
-  Presentation: "Slide Presentation",
-  SoftwareDemo: "Software Demo",
-  Lunch: "Lunch",
-  Recess: "Recess",
+  DailyStandup: "Daily Standup";
+  ComplianceTraining: "Compliance Training";
+  CheckEmail: "Check Email";
+  Brainstorm: "Group Brainstorm Session";
+  NewInitiative: "Outline New Initiative";
+  Interview: "Candidate Interview";
+  Presentation: "Slide Presentation";
+  SoftwareDemo: "Software Demo";
+  Lunch: "Lunch";
+  Recess: "Recess";
 };
 ```

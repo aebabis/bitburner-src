@@ -23,8 +23,9 @@ export function NetscriptBoss(): InternalAPI<BossAPI> {
       (_timezone): void => {
         // Adding break time logic
       },
-    getRsvps: (ctx: NetscriptContext) => (): void => {
+    getRsvps: (ctx: NetscriptContext) => (): string[] => {
       // What goes in here?
+      return [];
     },
     hasAccess: (ctx: NetscriptContext) => (): boolean => {
       return helpers.checkBossAPIAccess(ctx);

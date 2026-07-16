@@ -9,7 +9,7 @@ Changes your fixed schedule
 **Signature:**
 
 ```typescript
-changeFixedSchedule(fixedBreak: MeetingFixedBreaks , timezone: Date): void;
+changeFixedSchedule(fixedBreak: MeetingFixedBreaks, timezone: Date): void;
 ```
 
 ## Parameters

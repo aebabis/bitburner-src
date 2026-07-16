@@ -9,11 +9,11 @@ To add definition
 **Signature:**
 
 ```typescript
-getRsvps(): void;
+getRsvps(): string[];
 ```
 **Returns:**
 
-void
+string\[\]
 
 ## Remarks
 

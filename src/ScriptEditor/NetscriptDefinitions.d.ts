@@ -9972,7 +9972,7 @@ export interface Boss {
    * @remarks
    * RAM cost: 2 GB
    */
-  getRsvps(): void;
+  getRsvps(): string[];
 
   /**
    * Checks if you have access to the API

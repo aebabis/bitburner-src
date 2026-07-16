@@ -1024,6 +1024,7 @@ import nsDoc_bitburner_ns_args_md from "../../markdown/bitburner.ns.args.md?raw"
 import nsDoc_bitburner_ns_asleep_md from "../../markdown/bitburner.ns.asleep.md?raw";
 import nsDoc_bitburner_ns_atexit_md from "../../markdown/bitburner.ns.atexit.md?raw";
 import nsDoc_bitburner_ns_bladeburner_md from "../../markdown/bitburner.ns.bladeburner.md?raw";
+import nsDoc_bitburner_ns_boss_md from "../../markdown/bitburner.ns.boss.md?raw";
 import nsDoc_bitburner_ns_brutessh_md from "../../markdown/bitburner.ns.brutessh.md?raw";
 import nsDoc_bitburner_ns_clear_md from "../../markdown/bitburner.ns.clear.md?raw";
 import nsDoc_bitburner_ns_clearlog_md from "../../markdown/bitburner.ns.clearlog.md?raw";
@@ -2681,6 +2682,7 @@ AllPages["nsDoc/bitburner.ns.args.md"] = nsDoc_bitburner_ns_args_md;
 AllPages["nsDoc/bitburner.ns.asleep.md"] = nsDoc_bitburner_ns_asleep_md;
 AllPages["nsDoc/bitburner.ns.atexit.md"] = nsDoc_bitburner_ns_atexit_md;
 AllPages["nsDoc/bitburner.ns.bladeburner.md"] = nsDoc_bitburner_ns_bladeburner_md;
+AllPages["nsDoc/bitburner.ns.boss.md"] = nsDoc_bitburner_ns_boss_md;
 AllPages["nsDoc/bitburner.ns.brutessh.md"] = nsDoc_bitburner_ns_brutessh_md;
 AllPages["nsDoc/bitburner.ns.clear.md"] = nsDoc_bitburner_ns_clear_md;
 AllPages["nsDoc/bitburner.ns.clearlog.md"] = nsDoc_bitburner_ns_clearlog_md;
