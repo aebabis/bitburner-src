@@ -2,6 +2,7 @@ import { Boss as BossAPI, Meeting } from "@nsdefs";
 import { InternalAPI, NetscriptContext } from "../Netscript/APIWrapper";
 import { helpers } from "../Netscript/NetscriptHelpers";
 import { getEnumHelper } from "../utils/EnumHelper";
+import { generateNewMeeting } from "../Boss/createNewMeeting";
 
 export function NetscriptBoss(): InternalAPI<BossAPI> {
   return {
@@ -36,15 +37,7 @@ export function NetscriptBoss(): InternalAPI<BossAPI> {
     },
     calendar: {
       getAppointments: (ctx: NetscriptContext) => (): Meeting[] => {
-        return [
-          {
-            id: 1,
-            title: "Test",
-            startTime: "100",
-            finishTime: "200",
-            attendanceMults: 1.6,
-          },
-        ];
+        return [generateNewMeeting(), generateNewMeeting()];
       },
       rsvp:
         (ctx: NetscriptContext) =>
