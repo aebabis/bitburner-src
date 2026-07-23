@@ -9872,9 +9872,9 @@ type NSEnums = {
 /** Defines a Meeting */
 export interface Meeting {
   id: number;
-  title: string;
-  startTime: string;
-  finishTime: string;
+  title: MeetingTitle;
+  startTime: number;
+  finishTime: number;
   attendanceMults: number;
   nonAttendanceMults?: number;
 }
