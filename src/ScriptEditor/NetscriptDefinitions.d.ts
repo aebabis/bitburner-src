@@ -9734,8 +9734,8 @@ type MeetingTitleEnumType = {
   Interview: "Candidate Interview";
   Presentation: "Slide Presentation";
   SoftwareDemo: "Software Demo";
-  Lunch: "Lunch";
-  Recess: "Recess";
+  Lunch: MeetingFixedBreaksEnumType["Lunch"];
+  Recess: MeetingFixedBreaksEnumType["Recess"];
 };
 
 /** @public */
@@ -9743,8 +9743,8 @@ type MeetingTitle = _ValueOf<MeetingTitleEnumType>;
 
 /** @public */
 type MeetingFixedBreaksEnumType = {
-  Lunch: MeetingTitleEnumType["Lunch"];
-  Recess: MeetingTitleEnumType["Recess"];
+  Lunch: "Lunch";
+  Recess: "Recess";
 };
 
 /** @public */
