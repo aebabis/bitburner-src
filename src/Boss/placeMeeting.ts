@@ -1,5 +1,5 @@
 import { Meeting, MeetingTitle, MeetingFixedBreaks } from "@nsdefs";
-import { MAX_SIMULTANEOUS_MEETINGS } from "./meetingRound";
+import { MAX_SIMULTANEOUS_MEETINGS, RoundState } from "./meetingRound";
 import { generateMeetingID, generateRandomTitle } from "./createNewMeeting";
 
 type IStartEndTimes = Pick<Meeting, "startTime" | "finishTime">;
@@ -158,6 +158,24 @@ export function pickRerollSpot(candidates: Candidates[]): number {
   return 0;
 }
 
+/**
+ * Creates a Meeting with the provided props
+ *
+ * @param options - Basic meeting options.
+ * @param options.id - Optional meeting ID. Defaults to a random-generated ID.
+ * @param options.title - Optional meeting title. Defaults to a random-generated title.
+ *
+ * @param times - Meeting time range.
+ * @param times.startTime - Start time of the meeting.
+ * @param times.finishTime - End time of the meeting.
+ *
+ * @param multipliers - Attendance multipliers.
+ * @param multipliers.attendanceMults - Multiplier applied for attendance.
+ * @param multipliers.nonAttendanceMults - Optional multiplier applied for non-attendance.
+ *
+ * @returns The constructed Meeting
+ */
+
 export function createMeeting(
   { id = generateMeetingID(), title = generateRandomTitle() }: { id?: number; title?: MeetingTitle },
   { startTime, finishTime }: IStartEndTimes,
@@ -171,6 +189,50 @@ export function createMeeting(
     attendanceMults: attendanceMults,
     nonAttendanceMults: nonAttendanceMults,
   };
+}
+
+/**
+ * Checks whether two meetings' time spans overlap at all.
+ *
+ * @param a - first meeting
+ * @param b - second meeting
+ * @returns true if any instant of a's span coincides with b's span
+ */
+function doMeetingsOverlap(a: Meeting, b: Meeting): boolean {
+  return a.finishTime > b.startTime && a.startTime < b.finishTime;
+}
+
+/**
+ * Given the RoundState and a meeting ID, toggles attendance for that meeting.
+ *
+ * @param roundState - the current RoundState
+ * @param meetingID - the meeting ID
+ */
+function toggleMeeting(roundState: RoundState, meetingID: number): RoundState {
+  let newAttendance: number[];
+  if (roundState.attendance.includes(meetingID)) {
+    newAttendance = roundState.attendance.filter((m) => m != meetingID);
+  } else {
+    const meeting = roundState.meetings.find((m) => m.id === meetingID);
+    if (!meeting)
+      throw new Error(
+        `Invalid ID to toggle for: ${meetingID}, given the current RoundState: ${JSON.stringify(roundState)}`,
+      );
+    const nonConflicting = roundState.attendance.filter((id) => {
+      const attendedMeeting = roundState.meetings.find((m) => m.id === id);
+      if (!attendedMeeting) {
+        throw new Error(
+          `Attendance references a meeting id not present in this round: ${id}, ${JSON.stringify(
+            roundState.attendance,
+          )}`,
+        );
+      }
+      return !doMeetingsOverlap(meeting, attendedMeeting);
+    });
+
+    newAttendance = [...nonConflicting, meetingID];
+  }
+  return { ...roundState, attendance: newAttendance };
 }
 
 /**
