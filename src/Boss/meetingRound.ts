@@ -9,6 +9,7 @@ import {
   pickRerollSpot,
   MEETING_DURATION_RANGES,
   isFixedBreak,
+  computeMultiplierScale,
 } from "./placeMeeting";
 import { generateMeetingID, generateRandomTitle } from "./createNewMeeting";
 /**
@@ -23,6 +24,8 @@ export interface RoundState {
   dayStart: number;
   /** The time when the day ends */
   dayEnd: number;
+  /** Multipliers for this round */
+  mults: number;
 }
 
 /** Hard cap: no more than this many meetings overlap at any time */
@@ -39,6 +42,7 @@ export const MAX_SIMULTANEOUS_MEETINGS = 6;
  */
 export function generateMeetingsDay(dayStart: number, dayEnd: number, meetingCount: number): RoundState {
   const meetings: Meeting[] = [];
+  const k = computeMultiplierScale(dayStart, dayEnd);
 
   for (let i = 0; i < meetingCount; i++) {
     const { id: meetingID, title: meetingTitle } = { id: generateMeetingID(), title: generateRandomTitle() };
@@ -52,7 +56,7 @@ export function generateMeetingsDay(dayStart: number, dayEnd: number, meetingCou
       createMeeting(
         { id: meetingID, title: meetingTitle },
         { startTime: startTime, finishTime: startTime + duration },
-        { attendanceMults: 1 },
+        k,
       ),
     );
     if (getMaxOverlapInSpan(meetings) <= MAX_SIMULTANEOUS_MEETINGS) continue;
@@ -61,11 +65,7 @@ export function generateMeetingsDay(dayStart: number, dayEnd: number, meetingCou
     try {
       const spot = pickRerollSpot(findRerollCandidates(meetings, duration, dayStart, dayEnd - duration));
       meetings.push(
-        createMeeting(
-          { id: meetingID, title: meetingTitle },
-          { startTime: spot, finishTime: spot + duration },
-          { attendanceMults: 1 },
-        ),
+        createMeeting({ id: meetingID, title: meetingTitle }, { startTime: spot, finishTime: spot + duration }, k),
       );
     } catch {
       // candidates was an empty array
@@ -77,5 +77,6 @@ export function generateMeetingsDay(dayStart: number, dayEnd: number, meetingCou
     attendance: [], // a fresh round always starts with nobody attending
     dayStart,
     dayEnd,
+    mults: 1,
   };
 }

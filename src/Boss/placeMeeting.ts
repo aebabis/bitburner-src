@@ -45,6 +45,11 @@ export const FIXED_BREAK_DURATIONS: Record<MeetingFixedBreaks, number> = {
 };
 
 /**
+ * The base multiplier for attendanceMults and nonAttendanceMults. Referenced as `k` param.
+ */
+export const BASE_MULTS_MULTIPLIER = 0.3;
+
+/**
  * Draws a random meeting duration weighted by DURATION_WEIGHTS. Depends on the range as well.
  *
  * @param range - the range the duration is bound to
@@ -159,6 +164,21 @@ export function pickRerollSpot(candidates: Candidates[]): number {
 }
 
 /**
+ * Computes the per-hour multiplier scale (k) used for attendanceMults/
+ * nonAttendanceMults, derived from dayStart and dayEnd.
+ *
+ * The formula is k = 0.3 / (dayEnd - dayStart - 1).
+ *
+ * @param dayStart - the day start
+ * @param dayEnd - the day end
+ * @returns the multiplier scale
+ */
+export function computeMultiplierScale(dayStart: number, dayEnd: number): number {
+  const workingHoursEstimate = dayEnd - dayStart - 1;
+  return BASE_MULTS_MULTIPLIER / workingHoursEstimate;
+}
+
+/**
  * Creates a Meeting with the provided props
  *
  * @param options - Basic meeting options.
@@ -179,15 +199,16 @@ export function pickRerollSpot(candidates: Candidates[]): number {
 export function createMeeting(
   { id = generateMeetingID(), title = generateRandomTitle() }: { id?: number; title?: MeetingTitle },
   { startTime, finishTime }: IStartEndTimes,
-  { attendanceMults, nonAttendanceMults }: { attendanceMults: number; nonAttendanceMults?: number },
+  k: number,
 ): Meeting {
+  const duration = finishTime - startTime;
   return {
-    id: id,
-    title: title,
-    startTime: startTime,
-    finishTime: finishTime,
-    attendanceMults: attendanceMults,
-    nonAttendanceMults: nonAttendanceMults,
+    id,
+    title,
+    startTime,
+    finishTime,
+    attendanceMults: duration * k,
+    nonAttendanceMults: duration * (k / 2), // 2:1 ratio
   };
 }
 
@@ -208,9 +229,9 @@ function doMeetingsOverlap(a: Meeting, b: Meeting): boolean {
  * @param roundState - the current RoundState
  * @param meetingID - the meeting ID
  */
-function toggleMeeting(roundState: RoundState, meetingID: number): RoundState {
+export function toggleMeeting(roundState: RoundState, meetingID: number): RoundState {
   let newAttendance: number[];
-  if (roundState.attendance.includes(meetingID)) {
+  if (isMeetingAttended(roundState, meetingID)) {
     newAttendance = roundState.attendance.filter((m) => m != meetingID);
   } else {
     const meeting = roundState.meetings.find((m) => m.id === meetingID);
@@ -233,6 +254,39 @@ function toggleMeeting(roundState: RoundState, meetingID: number): RoundState {
     newAttendance = [...nonConflicting, meetingID];
   }
   return { ...roundState, attendance: newAttendance };
+}
+
+/**
+ * Returns true if the meeting is attended, false otherwise.
+ *
+ * @param roundState - the current {@link RoundState}
+ * @param meetingID - the meeting ID
+ */
+export function isMeetingAttended(roundState: RoundState, meetingID: number): boolean {
+  return roundState.attendance.includes(meetingID);
+}
+
+/**
+ * Updates the round multiplier
+ *
+ * @param roundState - the current {@link RoundState}
+ * @returns the updated RoundState
+ */
+export function getRewards(roundState: RoundState): RoundState {
+  const [attendedMeetings, nonAttendedMeetings] = roundState.meetings.reduce<[Meeting[], Meeting[]]>(
+    ([g, r], e) => {
+      (isMeetingAttended(roundState, e.id) ? g : r).push(e);
+      return [g, r];
+    },
+    [[], []],
+  );
+
+  const attendedSum = attendedMeetings.reduce((acc, m) => acc + m.attendanceMults, 0);
+  const nonAttendedSum = nonAttendedMeetings.reduce((acc, m) => acc + (m.nonAttendanceMults ?? 0), 0);
+
+  const mults = 1 + attendedSum - nonAttendedSum;
+
+  return { ...roundState, mults };
 }
 
 /**
