@@ -9925,30 +9925,46 @@ export interface Meeting {
 
 /** Company Calendar */
 export interface BossCalendar {
-  /** Get all the information of the next appointments
+  /**
+   * Get all the meetings this round.
    *
    * @remarks
    * RAM cost: 2 GB
    */
   getAppointments(): Meeting[];
 
-  /** French for répondez s'il vous plaît
+  /**
+   * Attend a meeting by its ID.
    *
-   * @param meetingID - The ID of the puzzle
+   * @param meetingID - The ID of the meeting to attend
    *
    * @remarks
    * RAM cost: 2 GB
    */
   rsvp(meetingID: number): void;
 
-  /** Cancel a specified meeting
+  /**
+   * Returns all the meetings' IDs you're attending to this round.
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  getRsvps(): number[];
+
+  /**
+   * Cancel the attendance to the specified meeting
    *
    * @param meetingID - the ID of the meeting to cancel
    *
    * @remarks
    * RAM cost: 2 GB
    */
-  cancelMeeting(meetingID: number): void;
+  cancelMeetingAttendance(meetingID: number): void;
+
+  /**
+   * Returns true if the meeting is attended, false otherwise
+   */
+  isMeetingAttended(meetingID: number): boolean;
 }
 
 /** Agent API. Allows you to interact with your agents */
@@ -10009,14 +10025,6 @@ export interface Boss {
    * RAM cost: 4 GB
    */
   addBreakTime(timezone: Date): void;
-
-  /**
-   * To add definition
-   *
-   * @remarks
-   * RAM cost: 2 GB
-   */
-  getRsvps(): string[];
 
   /**
    * Checks if you have access to the API
