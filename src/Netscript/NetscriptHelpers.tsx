@@ -91,6 +91,7 @@ export const helpers = {
   validateHGWOptions,
   checkEnvFlags,
   checkSingularityAccess,
+  checkBossAPIAccess,
   netscriptDelay,
   updateDynamicRam,
   getServer,
@@ -443,6 +444,11 @@ function checkSingularityAccess(ctx: NetscriptContext): void {
       "API ACCESS",
     );
   }
+}
+
+/** Returns true if the player has access, false otherwise. */
+function checkBossAPIAccess(): boolean {
+  return canAccessBitNodeFeature(16);
 }
 
 /** Create an error if a script is dead or if concurrent ns function calls are made */

@@ -7309,6 +7309,11 @@ export interface NS {
   readonly grafting: Grafting;
 
   /**
+   * Namespace for {@link Boss | boss} functions. Contains spoilers.
+   */
+  readonly boss: Boss;
+
+  /**
    * Arguments passed into the script.
    *
    * These arguments can be accessed as a normal array by using the `[]` operator
@@ -9764,6 +9769,32 @@ type ProgramNameEnumType = {
 type ProgramName = _ValueOf<ProgramNameEnumType>;
 
 /** @public */
+type MeetingTitleEnumType = {
+  DailyStandup: "Daily Standup";
+  ComplianceTraining: "Compliance Training";
+  CheckEmail: "Check Email";
+  Brainstorm: "Group Brainstorm Session";
+  NewInitiative: "Outline New Initiative";
+  Interview: "Candidate Interview";
+  Presentation: "Slide Presentation";
+  SoftwareDemo: "Software Demo";
+  Lunch: MeetingFixedBreaksEnumType["Lunch"];
+  Recess: MeetingFixedBreaksEnumType["Recess"];
+};
+
+/** @public */
+type MeetingTitle = _ValueOf<MeetingTitleEnumType>;
+
+/** @public */
+type MeetingFixedBreaksEnumType = {
+  Lunch: "Lunch";
+  Recess: "Recess";
+};
+
+/** @public */
+type MeetingFixedBreaks = _ValueOf<MeetingFixedBreaksEnumType>;
+
+/** @public */
 type CodingContractNameEnumType = {
   FindLargestPrimeFactor: "Find Largest Prime Factor";
   SubarrayWithMaximumSum: "Subarray with Maximum Sum";
@@ -9879,7 +9910,144 @@ type NSEnums = {
   DarknetResponseCode: DarknetResponseCodeType;
   ProgramName: ProgramNameEnumType;
   GangTaskName: GangTaskNameEnumType;
+  MeetingTitle: MeetingTitleEnumType;
 };
+
+/** Defines a Meeting */
+export interface Meeting {
+  id: number;
+  title: MeetingTitle;
+  startTime: number;
+  finishTime: number;
+  attendanceMults: number;
+  nonAttendanceMults?: number;
+}
+
+/** Company Calendar */
+export interface BossCalendar {
+  /**
+   * Get all the meetings this round.
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  getAppointments(): Meeting[];
+
+  /**
+   * Attend a meeting by its ID.
+   *
+   * @param meetingID - The ID of the meeting to attend
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  rsvp(meetingID: number): void;
+
+  /**
+   * Returns all the meetings' IDs you're attending to this round.
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  getRsvps(): number[];
+
+  /**
+   * Cancel the attendance to the specified meeting
+   *
+   * @param meetingID - the ID of the meeting to cancel
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  cancelMeetingAttendance(meetingID: number): void;
+
+  /**
+   * Returns true if the meeting is attended, false otherwise
+   */
+  isMeetingAttended(meetingID: number): boolean;
+}
+
+/** Agent API. Allows you to interact with your agents */
+export interface BossAgents {
+  /**
+   * Returns the number of agents you own
+   *
+   * @remarks
+   * RAM cost: 0.2 GB
+   */
+  getNumAgents(): number;
+
+  /**
+   * Hires a new agent
+   *
+   * @remarks
+   * RAM cost: 3 GB
+   */
+  hireAgent(): void;
+}
+
+/**
+ * Boss API
+ *
+ * @remarks
+ * You need SF16.1 in order to access this API
+ */
+export interface Boss {
+  /** Solve a puzzle
+   *
+   * @remarks
+   * RAM cost: 10 GB
+   *
+   * @param puzzleID - ID of the puzzle to solve
+   * @param solution - The solution to the puzzle
+   * @returns A string with a list of the rewards or an empty string on failure
+   */
+  solvePuzzle(puzzleID: number, solution: string): string;
+
+  /**
+   * Changes your fixed schedule
+   *
+   * @param fixedBreak - the break type you want (lunch/recess)
+   * @param timezone - the timezone to move the break to
+   *
+   * @remarks
+   * RAM cost: 4 GB
+   * Change param timezone!!!
+   */
+  changeFixedSchedule(fixedBreak: MeetingFixedBreaks, timezone: Date): void;
+
+  /**
+   * Adds a recess break time to your schedule
+   *
+   * @param timezone - the timezone to add the break to
+   *
+   * @remarks
+   * RAM cost: 4 GB
+   */
+  addBreakTime(timezone: Date): void;
+
+  /**
+   * Checks if you have access to the API
+   *
+   * @remarks
+   * RAM cost: 0.1 GB
+   * Does not require API access
+   */
+  hasAccess(): boolean;
+
+  /**
+   * Returns the number of milliseconds to the next update
+   *
+   * @remarks
+   * RAM cost: 0.2 GB
+   */
+  nextUpdate(): number;
+
+  /** Calendar */
+  calendar: BossCalendar;
+  /** Agents */
+  agent: BossAgents;
+}
 
 /**
  * Corporation Office API
