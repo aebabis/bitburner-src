@@ -744,9 +744,9 @@ export const ns: InternalAPI<NSFull> = {
       return false;
     }
     const files = Array.isArray(_files) ? _files : [_files];
-    const lits: FilePath[] = [];
+    const litFiles: FilePath[] = [];
     const contentFiles: ContentFilePath[] = [];
-    //First loop through filenames to find all errors before moving anything.
+    // First loop through filenames to find all errors before moving anything.
     for (const file of files) {
       const path = helpers.filePath(ctx, "files", file);
       if (hasScriptExtension(path) || hasTextExtension(path)) {
@@ -759,7 +759,7 @@ export const ns: InternalAPI<NSFull> = {
           `Cannot transfer ${path}: scp only can be used with script, text, and .lit files`,
         );
       }
-      lits.push(path);
+      litFiles.push(path);
     }
 
     let noFailures = true;
@@ -780,7 +780,7 @@ export const ns: InternalAPI<NSFull> = {
     }
 
     // --- Literature Files ---
-    for (const litFilePath of lits) {
+    for (const litFilePath of litFiles) {
       const sourceMessage = sourceServer.messages.find((message) => message === litFilePath);
       if (!sourceMessage) {
         helpers.log(ctx, () => `File '${litFilePath}' does not exist.`);
