@@ -60,7 +60,6 @@ class BossState {
   /**
    * Ends the round, applying the current calendar's bonus for the next round
    * and creating a new calendar.
-   * takes its place.
    */
   rollover(): void {
     this.appliedBonuses = this.round.mults;
