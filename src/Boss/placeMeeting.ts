@@ -1,6 +1,7 @@
 import { Meeting, MeetingTitle, MeetingFixedBreaks } from "@nsdefs";
 import { MAX_SIMULTANEOUS_MEETINGS, RoundState } from "./meetingRound";
 import { generateMeetingID, generateRandomTitle } from "./createNewMeeting";
+import { addBonuses, createBonusDrawer, newBonuses } from "./bonuses";
 
 type IStartEndTimes = Pick<Meeting, "startTime" | "finishTime">;
 type Candidates = { start: number; freeSpots: number };
@@ -189,9 +190,8 @@ export function computeMultiplierScale(dayStart: number, dayEnd: number): number
  * @param times.startTime - Start time of the meeting.
  * @param times.finishTime - End time of the meeting.
  *
- * @param multipliers - Attendance multipliers.
- * @param multipliers.attendanceMults - Multiplier applied for attendance.
- * @param multipliers.nonAttendanceMults - Optional multiplier applied for non-attendance.
+ * @param k - Multiplier scale for the day. See {@link computeMultiplierScale}.
+ * @param drawBonuses - This calendar's bonus drawer. See {@link createBonusDrawer}.
  *
  * @returns The constructed Meeting
  */
@@ -200,6 +200,7 @@ export function createMeeting(
   { id = generateMeetingID(), title = generateRandomTitle() }: { id?: number; title?: MeetingTitle },
   { startTime, finishTime }: IStartEndTimes,
   k: number,
+  drawBonuses = createBonusDrawer(),
 ): Meeting {
   const duration = finishTime - startTime;
   return {
@@ -207,8 +208,10 @@ export function createMeeting(
     title,
     startTime,
     finishTime,
-    attendanceMults: duration * k,
-    nonAttendanceMults: duration * (k / 2), // 2:1 ratio
+    // Randomly generated bonuses for meeting, scaled by meeting length
+    attendanceMults: drawBonuses(duration * k),
+    // Penalties for non-attendance. Currently disabled.
+    nonAttendanceMults: newBonuses(0),
   };
 }
 
@@ -253,7 +256,7 @@ export function toggleMeeting(roundState: RoundState, meetingID: number): RoundS
 
     newAttendance = [...nonConflicting, meetingID];
   }
-  return { ...roundState, attendance: newAttendance };
+  return getRewards({ ...roundState, attendance: newAttendance });
 }
 
 /**
@@ -267,24 +270,21 @@ export function isMeetingAttended(roundState: RoundState, meetingID: number): bo
 }
 
 /**
- * Updates the round multiplier
+ * Gets rewards of current calendar based on RSVPs
  *
  * @param roundState - the current {@link RoundState}
  * @returns the updated RoundState
  */
 export function getRewards(roundState: RoundState): RoundState {
-  const [attendedMeetings, nonAttendedMeetings] = roundState.meetings.reduce<[Meeting[], Meeting[]]>(
-    ([g, r], e) => {
-      (isMeetingAttended(roundState, e.id) ? g : r).push(e);
-      return [g, r];
-    },
-    [[], []],
-  );
+  const mults = newBonuses(1);
 
-  const attendedSum = attendedMeetings.reduce((acc, m) => acc + m.attendanceMults, 0);
-  const nonAttendedSum = nonAttendedMeetings.reduce((acc, m) => acc + (m.nonAttendanceMults ?? 0), 0);
-
-  const mults = 1 + attendedSum - nonAttendedSum;
+  for (const meeting of roundState.meetings) {
+    if (isMeetingAttended(roundState, meeting.id)) {
+      addBonuses(mults, meeting.attendanceMults);
+    } else if (meeting.nonAttendanceMults) {
+      addBonuses(mults, meeting.nonAttendanceMults, -1);
+    }
+  }
 
   return { ...roundState, mults };
 }

@@ -13,6 +13,9 @@ import { Reputation } from "../ui/React/Reputation";
 import { CompanyPositions } from "../Company/CompanyPositions";
 import { isMember } from "../utils/EnumHelper";
 import { invalidWork } from "./InvalidWork";
+import { Boss } from "../Boss/Boss";
+import { applyMeetingBonuses } from "../Boss/bonuses";
+import { hasCalendarAccess } from "../Boss/access";
 
 interface CompanyWorkParams {
   companyName: CompanyName;
@@ -35,7 +38,12 @@ export class CompanyWork extends PlayerBaseWork {
   getGainRates(job: JobName): WorkStats {
     const focusBonus = CompanyPositions[job].isPartTime ? 1 : Player.focusPenalty();
     const company = this.getCompany();
-    return scaleWorkStats(calculateCompanyWorkStats(Player, company, CompanyPositions[job], company.favor), focusBonus);
+    const stats = scaleWorkStats(
+      calculateCompanyWorkStats(Player, company, CompanyPositions[job], company.favor),
+      focusBonus,
+    );
+    if (!hasCalendarAccess()) return stats;
+    return applyMeetingBonuses(stats, Boss.appliedBonuses);
   }
 
   process(cycles: number): boolean {
