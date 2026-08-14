@@ -59,7 +59,7 @@ class BossState {
 
   /**
    * Ends the round, applying the current calendar's bonus for the next round
-   * and creating a new calendar.
+   * and creating a new calendar that
    * takes its place.
    */
   rollover(): void {
