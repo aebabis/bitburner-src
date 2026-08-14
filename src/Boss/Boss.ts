@@ -43,29 +43,29 @@ class BossState {
 
   /** How far through the current round we are, 0 to 1. */
   get roundProgress(): number {
-    return Math.min(1, this.roundElapsed / ROUND_LENGTH_MS);
+    return Math.min(1, this.roundElapsedMs / ROUND_LENGTH_MS);
   }
 
   /** Milliseconds of game time until the next rollover. */
   get timeUntilRollover(): number {
-    return Math.max(0, ROUND_LENGTH_MS - this.roundElapsed);
+    return Math.max(0, ROUND_LENGTH_MS - this.roundElapsedMs);
   }
 
+  /** Advances timer and starts a new round if the current one is done */
   process(numCycles: number): void {
-    this.roundElapsed += numCycles * CONSTANTS.MilliPerCycle;
-    if (this.roundElapsed < ROUND_LENGTH_MS) return;
+    this.roundElapsedMs += numCycles * CONSTANTS.MilliPerCycle;
+    if (this.roundElapsedMs < ROUND_LENGTH_MS) return;
     this.rollover();
   }
 
   /**
    * Ends the round, applying the current calendar's bonus for the next round
-   * and creating a new calendar that
-   * takes its place.
+   * and creating a new calendar that takes its place.
    */
   rollover(): void {
     this.appliedBonuses = this.round.mults;
     this.round = this.generateRound();
-    this.roundElapsed = 0;
+    this.roundElapsedMs = 0;
 
     if (BossPromise.resolve) {
       BossPromise.resolve(ROUND_LENGTH_MS);
@@ -84,7 +84,7 @@ class BossState {
   reset(): void {
     this.appliedBonuses = newBonuses(1);
     this.round = this.generateRound();
-    this.roundElapsed = 0;
+    this.roundElapsedMs = 0;
   }
 }
 
