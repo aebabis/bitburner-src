@@ -14,7 +14,7 @@ function checkAccess(ctx: NetscriptContext): void {
 }
 
 /** Resolves a meeting ID against the current round, throwing if it isn't on the calendar. */
-function getMeeting(ctx: NetscriptContext, _meetingID: unknown): Meeting {
+function getMeetingOrThrow(ctx: NetscriptContext, _meetingID: unknown): Meeting {
   const meetingID = helpers.number(ctx, "meetingID", _meetingID);
   const meeting = Boss.round.meetings.find((m) => m.id === meetingID);
   if (!meeting) {
@@ -60,7 +60,7 @@ export function NetscriptBoss(): InternalAPI<BossAPI> {
       },
       rsvp: (ctx: NetscriptContext, _meetingID): void => {
         checkAccess(ctx);
-        const meeting = getMeeting(ctx, _meetingID);
+        const meeting = getMeetingOrThrow(ctx, _meetingID);
         if (isMeetingAttended(Boss.round, meeting.id)) {
           throw helpers.errorMessage(ctx, `Meeting ${meeting.id} is already attended.`);
         }
@@ -69,7 +69,7 @@ export function NetscriptBoss(): InternalAPI<BossAPI> {
       },
       cancelMeetingAttendance: (ctx: NetscriptContext, _meetingID): void => {
         checkAccess(ctx);
-        const meeting = getMeeting(ctx, _meetingID);
+        const meeting = getMeetingOrThrow(ctx, _meetingID);
         if (!isMeetingAttended(Boss.round, meeting.id)) {
           throw helpers.errorMessage(ctx, `Meeting ${meeting.id} is not attended.`);
         }
@@ -81,7 +81,7 @@ export function NetscriptBoss(): InternalAPI<BossAPI> {
       },
       isMeetingAttended: (ctx: NetscriptContext, _meetingID): boolean => {
         checkAccess(ctx);
-        return isMeetingAttended(Boss.round, getMeeting(ctx, _meetingID).id);
+        return isMeetingAttended(Boss.round, getMeetingOrThrow(ctx, _meetingID).id);
       },
       getPendingRewards: (ctx: NetscriptContext): MeetingBonuses => {
         checkAccess(ctx);
