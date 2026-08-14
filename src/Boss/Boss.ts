@@ -22,7 +22,7 @@ class BossState {
   /** The current calendar and RSVP state */
   round: RoundState;
   /** Milliseconds of game time elapsed in the current round. */
-  roundElapsed = 0;
+  roundElapsedMs = 0;
   /** Rewards locked in at the last rollover. The current work multipliers */
   appliedBonuses: MeetingBonuses = newBonuses(1);
   /** Difficulty based on player's career track position */
