@@ -10075,7 +10075,7 @@ export interface Boss {
    * Waits for the current round to end and its rewards to lock in.
    *
    * @remarks
-   * RAM cost: 0.2 GB
+   * RAM cost: 0 GB
    *
    * @returns Promise that resolves to the number of milliseconds that were processed in the round
    * that just ended.

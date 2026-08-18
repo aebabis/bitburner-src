@@ -552,7 +552,7 @@ const boss = {
   changeFixedSchedule: RamCostConstants.BossChanger,
   addBreakTime: RamCostConstants.BossChanger,
   hasAccess: RamCostConstants.BossVeryLow,
-  nextUpdate: RamCostConstants.BossLow,
+  nextUpdate: RamCostConstants.CycleTiming,
   getAppliedRewards: RamCostConstants.BossLow,
   calendar: {
     getAppointments: RamCostConstants.BossNormal,
