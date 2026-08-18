@@ -64,12 +64,10 @@ export function applyMeetingBonuses(stats: WorkStats, bonuses: MeetingBonuses): 
 
 /**
  * Adds `source` into `target`, in place.
- *
- * @param scale - multiplied into every source value first. Pass -1 to subtract.
  */
-export function addBonuses(target: MeetingBonuses, source: MeetingBonuses, scale = 1): void {
+export function addBonuses(target: MeetingBonuses, source: MeetingBonuses): void {
   for (const stat of BONUS_STATS) {
-    target[stat] += source[stat] * scale;
+    target[stat] += source[stat];
   }
 }
 

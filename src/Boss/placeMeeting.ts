@@ -282,7 +282,7 @@ export function getRewards(roundState: RoundState): RoundState {
     if (isMeetingAttended(roundState, meeting.id)) {
       addBonuses(mults, meeting.attendanceMults);
     } else if (meeting.nonAttendanceMults) {
-      addBonuses(mults, meeting.nonAttendanceMults, -1);
+      addBonuses(mults, meeting.nonAttendanceMults);
     }
   }
 
