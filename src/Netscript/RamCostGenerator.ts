@@ -551,13 +551,16 @@ const boss = {
   solvePuzzle: RamCostConstants.BossSolver,
   changeFixedSchedule: RamCostConstants.BossChanger,
   addBreakTime: RamCostConstants.BossChanger,
-  getRsvps: RamCostConstants.BossNormal,
   hasAccess: RamCostConstants.BossVeryLow,
   nextUpdate: RamCostConstants.BossLow,
+  getAppliedRewards: RamCostConstants.BossLow,
   calendar: {
     getAppointments: RamCostConstants.BossNormal,
     rsvp: RamCostConstants.BossNormal,
-    cancelMeeting: RamCostConstants.BossNormal,
+    getRsvps: RamCostConstants.BossNormal,
+    cancelMeetingAttendance: RamCostConstants.BossNormal,
+    isMeetingAttended: RamCostConstants.BossLow,
+    getPendingRewards: RamCostConstants.BossLow,
   } as const,
   agent: {
     getNumAgents: RamCostConstants.BossLow,

@@ -9776,7 +9776,7 @@ type MeetingTitleEnumType = {
   Brainstorm: "Group Brainstorm Session";
   NewInitiative: "Outline New Initiative";
   Interview: "Candidate Interview";
-  Presentation: "Slide Presentation";
+  SlidePresentation: "Slide Presentation";
   SoftwareDemo: "Software Demo";
   Lunch: MeetingFixedBreaksEnumType["Lunch"];
   Recess: MeetingFixedBreaksEnumType["Recess"];
@@ -9913,14 +9913,38 @@ type NSEnums = {
   MeetingTitle: MeetingTitleEnumType;
 };
 
+/**
+ * Per-stat bonuses, either attached to a single meeting or tabulated across a whole calendar.
+ *
+ * The meaning of a value depends on where the record came from:
+ *
+ * - On a {@link Meeting}, values are additive contributions, and 0 means "no bonus to this stat".
+ * - From {@link BossCalendar.getPendingRewards} or {@link Boss.getAppliedRewards}, values are
+ *   multipliers on your work gains, and 1 means "no change to this stat".
+ *
+ * @public
+ */
+export interface MeetingBonuses {
+  money: number;
+  reputation: number;
+  hackExp: number;
+  strExp: number;
+  defExp: number;
+  dexExp: number;
+  agiExp: number;
+  chaExp: number;
+}
+
 /** Defines a Meeting */
 export interface Meeting {
   id: number;
   title: MeetingTitle;
   startTime: number;
   finishTime: number;
-  attendanceMults: number;
-  nonAttendanceMults?: number;
+  /** What attending this meeting contributes. Additive; 0 means no bonus to that stat. */
+  attendanceMults: MeetingBonuses;
+  /** What skipping this meeting costs. Currently generated as all zeroes. */
+  nonAttendanceMults?: MeetingBonuses;
 }
 
 /** Company Calendar */
@@ -9965,6 +9989,18 @@ export interface BossCalendar {
    * Returns true if the meeting is attended, false otherwise
    */
   isMeetingAttended(meetingID: number): boolean;
+
+  /**
+   * Rewards the current RSVPs would provide next round.
+   *
+   * @remarks
+   * RAM cost: 0.2 GB
+   *
+   * These move every time you RSVP or cancel, and they are *not* what you are being paid right now
+   * - see {@link Boss.getAppliedRewards}. Values are multipliers on your work gains, so 1 means no
+   * change to that stat.
+   */
+  getPendingRewards(): MeetingBonuses;
 }
 
 /** Agent API. Allows you to interact with your agents */
@@ -10036,12 +10072,37 @@ export interface Boss {
   hasAccess(): boolean;
 
   /**
-   * Returns the number of milliseconds to the next update
+   * Waits for the current round to end and its rewards to lock in.
    *
    * @remarks
    * RAM cost: 0.2 GB
+   *
+   * @returns Promise that resolves to the number of milliseconds that were processed in the round
+   * that just ended.
+   *
+   * @example
+   * ```js
+   * while (true) {
+   *   await ns.boss.nextUpdate();
+   *   // A fresh calendar is up and your last one is now being paid out.
+   *   for (const meeting of solve(ns.boss.calendar.getAppointments())) {
+   *     ns.boss.calendar.rsvp(meeting.id);
+   *   }
+   * }
+   * ```
    */
-  nextUpdate(): number;
+  nextUpdate(): Promise<number>;
+
+  /**
+   * Rewards currently multiplying your work gains.
+   *
+   * @remarks
+   * RAM cost: 0.2 GB
+   *
+   * These were locked in at the last rollover from whatever was pending at the time, and they hold
+   * steady for the whole round. Values are multipliers, so 1 means no change to that stat.
+   */
+  getAppliedRewards(): MeetingBonuses;
 
   /** Calendar */
   calendar: BossCalendar;

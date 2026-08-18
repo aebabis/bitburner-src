@@ -1,4 +1,5 @@
-import { Meeting } from "@nsdefs";
+import { Meeting, MeetingBonuses } from "@nsdefs";
+import { createBonusDrawer, newBonuses } from "./bonuses";
 import {
   createMeeting,
   drawDuration,
@@ -24,8 +25,8 @@ export interface RoundState {
   dayStart: number;
   /** The time when the day ends */
   dayEnd: number;
-  /** Multipliers for this round */
-  mults: number;
+  /** Multipliers of current calendar state */
+  mults: MeetingBonuses;
 }
 
 /** Hard cap: no more than this many meetings overlap at any time */
@@ -43,6 +44,7 @@ export const MAX_SIMULTANEOUS_MEETINGS = 6;
 export function generateMeetingsDay(dayStart: number, dayEnd: number, meetingCount: number): RoundState {
   const meetings: Meeting[] = [];
   const k = computeMultiplierScale(dayStart, dayEnd);
+  const drawBonuses = createBonusDrawer();
 
   for (let i = 0; i < meetingCount; i++) {
     const { id: meetingID, title: meetingTitle } = { id: generateMeetingID(), title: generateRandomTitle() };
@@ -57,6 +59,7 @@ export function generateMeetingsDay(dayStart: number, dayEnd: number, meetingCou
         { id: meetingID, title: meetingTitle },
         { startTime: startTime, finishTime: startTime + duration },
         k,
+        drawBonuses,
       ),
     );
     if (getMaxOverlapInSpan(meetings) <= MAX_SIMULTANEOUS_MEETINGS) continue;
@@ -65,7 +68,12 @@ export function generateMeetingsDay(dayStart: number, dayEnd: number, meetingCou
     try {
       const spot = pickRerollSpot(findRerollCandidates(meetings, duration, dayStart, dayEnd - duration));
       meetings.push(
-        createMeeting({ id: meetingID, title: meetingTitle }, { startTime: spot, finishTime: spot + duration }, k),
+        createMeeting(
+          { id: meetingID, title: meetingTitle },
+          { startTime: spot, finishTime: spot + duration },
+          k,
+          drawBonuses,
+        ),
       );
     } catch {
       // candidates was an empty array
@@ -77,6 +85,6 @@ export function generateMeetingsDay(dayStart: number, dayEnd: number, meetingCou
     attendance: [], // a fresh round always starts with nobody attending
     dayStart,
     dayEnd,
-    mults: 1,
+    mults: newBonuses(1),
   };
 }

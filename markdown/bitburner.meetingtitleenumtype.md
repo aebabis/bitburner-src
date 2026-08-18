@@ -15,7 +15,7 @@ type MeetingTitleEnumType = {
   Brainstorm: "Group Brainstorm Session";
   NewInitiative: "Outline New Initiative";
   Interview: "Candidate Interview";
-  Presentation: "Slide Presentation";
+  SlidePresentation: "Slide Presentation";
   SoftwareDemo: "Software Demo";
   Lunch: MeetingFixedBreaksEnumType["Lunch"];
   Recess: MeetingFixedBreaksEnumType["Recess"];

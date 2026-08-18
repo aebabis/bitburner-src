@@ -6,6 +6,7 @@ import { tryGeneratingRandomContract } from "./CodingContract/ContractGenerator"
 import { CONSTANTS } from "./Constants";
 import { Factions } from "./Faction/Factions";
 import { staneksGift } from "./CotMG/Helper";
+import { Boss } from "./Boss/Boss";
 import { processPassiveFactionRepGain, inviteToFaction } from "./Faction/FactionHelpers";
 import { Router } from "./ui/GameRoot";
 import "./PersonObjects/Player/PlayerObject"; // For side-effect of creating Player
@@ -106,6 +107,9 @@ const Engine = {
 
     // Stanek's gift
     staneksGift.process(numCycles);
+
+    // Calendar puzzle
+    Boss.process(numCycles);
 
     // Corporation
     if (Player.corporation) {
