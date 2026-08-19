@@ -69,7 +69,7 @@ export function MeetingBlock({ meeting, dayStart, dayEnd, attended, onClick }: M
       <Typography sx={{ color: "inherit", fontSize: "0.75em", lineHeight: 1.2 }}>
         {formatMeetingTime(meeting.startTime)} - {formatMeetingTime(meeting.finishTime)}
       </Typography>
-      {/* The id is on screen because scripts address meetings by it - see ns.boss.calendar.rsvp. */}
+      {/* The id is on screen because scripts address meetings by it - see {@link ../../NetscriptFunctions:Boss.calendar.rsvp}. */}
       <Typography sx={{ color: "inherit", fontSize: "0.7em", lineHeight: 1.2, opacity: 0.7 }}>{meeting.id}</Typography>
     </ButtonBase>
   );
