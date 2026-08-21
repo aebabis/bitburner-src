@@ -29,6 +29,8 @@ import { isCompanyWork } from "../Work/CompanyWork";
 import { Router } from "./GameRoot";
 import { Page } from "./Router";
 import { formatExp, formatPercent } from "./formatNumber";
+import { CalendarRoot } from "../Boss/ui/CalendarRoot";
+import { hasCalendarAccess } from "../Boss/access";
 
 const CYCLES_PER_SEC = 1000 / CONSTANTS.MilliPerCycle;
 
@@ -41,6 +43,7 @@ interface IWorkInfo {
 
   description?: string | React.ReactElement;
   gains?: React.ReactElement[];
+  content?: React.ReactElement;
   progress?: {
     elapsed?: number;
     remaining?: number;
@@ -461,6 +464,7 @@ export function WorkInProgressRoot(): React.ReactElement {
         </StatsRow>,
         ...ExpRows(gains),
       ],
+      content: hasCalendarAccess() ? <CalendarRoot /> : undefined,
       progress: {
         elapsed: Player.currentWork.cyclesWorked * CONSTANTS.MilliPerCycle,
       },
@@ -482,8 +486,15 @@ export function WorkInProgressRoot(): React.ReactElement {
 
   return (
     <Container
-      maxWidth="md"
-      sx={{ display: "flex", flexDirection: "column", justifyContent: "center", height: "calc(100vh - 16px)" }}
+      maxWidth={workInfo.content ? "lg" : "md"}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: workInfo.content ? "flex-start" : "center",
+        height: "calc(100vh - 16px)",
+        overflowY: "auto",
+        py: 1,
+      }}
     >
       <Paper sx={{ p: 1, mb: 1 }}>
         <Typography variant="h6">{workInfo.title}</Typography>
@@ -494,6 +505,7 @@ export function WorkInProgressRoot(): React.ReactElement {
           </Table>
         )}
       </Paper>
+      {workInfo.content && <Paper sx={{ p: 1, mb: 1 }}>{workInfo.content}</Paper>}
       <Paper sx={{ mb: 1, p: 1 }}>
         {workInfo.progress !== undefined && (
           <Box sx={{ mb: 1 }}>
