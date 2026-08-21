@@ -16,20 +16,16 @@ const STAT_NAMES: Record<BonusStat, string> = {
   chaExp: "Charisma Exp",
 };
 
-function statColor(stat: BonusStat): string {
-  switch (stat) {
-    case "money":
-      return Settings.theme.money;
-    case "reputation":
-      return Settings.theme.rep;
-    case "hackExp":
-      return Settings.theme.hack;
-    case "chaExp":
-      return Settings.theme.cha;
-    default:
-      return Settings.theme.combat;
-  }
-}
+const STAT_COLORS = {
+  money: Settings.theme.money,
+  reputation: Settings.theme.rep,
+  hackExp: Settings.theme.hack,
+  strExp: Settings.theme.combat,
+  defExp: Settings.theme.combat,
+  dexExp: Settings.theme.combat,
+  agiExp: Settings.theme.combat,
+  chaExp: Settings.theme.cha,
+} as const;
 
 interface RoundRewardsProps {
   label: string;
@@ -52,7 +48,7 @@ export function RoundRewards({ label, fnName, bonuses, emptyText }: RoundRewards
             <Typography sx={{ color: Settings.theme.disabled }}>{emptyText}</Typography>
           ) : (
             active.map((stat) => (
-              <Typography key={stat} sx={{ color: statColor(stat) }}>
+              <Typography key={stat} sx={{ color: STAT_COLORS[stat] }}>
                 {STAT_NAMES[stat]} &times;{bonuses[stat].toFixed(3)}
               </Typography>
             ))
