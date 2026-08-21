@@ -30,7 +30,7 @@ export function CalendarRoot(): React.ReactElement {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: "0.75em" }}>
       <Typography>
-        Schedule meetings to earn bonuses on your work. What you book now is applied at the start of the next cycle.
+        Schedule meetings to earn bonuses on your work. The rewards of what you attend now is applied at the start of the next cycle.
       </Typography>
 
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: "1.5em" }}>
