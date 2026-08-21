@@ -24,7 +24,7 @@ export function HourLine({ hour, dayStart, dayEnd }: HourLineProps): React.React
           pointerEvents: "none",
         }}
       >
-        {`${hour}`.padStart(2, "0")}:00
+        {hour.toString().padStart(2, "0")}:00
       </Typography>
     </Box>
   );
