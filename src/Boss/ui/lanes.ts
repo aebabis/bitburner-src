@@ -9,7 +9,7 @@ export function splitIntoLanes(meetings: Meeting[]): Meeting[][] {
   if (meetings.length === 0) return [];
 
   const lanes: Meeting[][] = [[]];
-  for (const meeting of [...meetings].sort((a, b) => a.startTime - b.startTime)) {
+  for (const meeting of meetings.toSorted((a, b) => a.startTime - b.startTime)) {
     const laneWithRoom = lanes.find((lane) => lane.every((other) => !overlaps(meeting, other)));
     if (laneWithRoom) laneWithRoom.push(meeting);
     else lanes.push([meeting]);
