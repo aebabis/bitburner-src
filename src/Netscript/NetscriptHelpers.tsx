@@ -64,6 +64,7 @@ import {
 } from "../BitNode/BitNodeUtils";
 import { JSONMap } from "../Types/Jsonable";
 import { Settings } from "../Settings/Settings";
+import { hasCalendarAccess } from "../Boss/access";
 import { Programs } from "../Programs/Programs";
 import { getRecordKeys } from "../Types/Record";
 import { DarknetServer } from "../Server/DarknetServer";
@@ -91,6 +92,7 @@ export const helpers = {
   validateHGWOptions,
   checkEnvFlags,
   checkSingularityAccess,
+  checkBossAPIAccess,
   netscriptDelay,
   updateDynamicRam,
   getServer,
@@ -443,6 +445,12 @@ function checkSingularityAccess(ctx: NetscriptContext): void {
       "API ACCESS",
     );
   }
+}
+
+/** Returns true if the player has access, false otherwise. */
+function checkBossAPIAccess(): boolean {
+  // TODO: Make this check BN/SF and job requirements
+  return hasCalendarAccess();
 }
 
 /** Create an error if a script is dead or if concurrent ns function calls are made */

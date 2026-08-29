@@ -1,1593 +1,760 @@
-import { vsprintf, sprintf } from "sprintf-js";
-import { currentNodeMults } from "./BitNode/BitNodeMultipliers";
-import { CONSTANTS } from "./Constants";
+import type { InternalAPI, NetscriptContext } from "../Netscript/APIWrapper";
+import type { Darknet as DarknetAPI, DarknetResult } from "@nsdefs";
+import { helpers } from "../Netscript/NetscriptHelpers";
 import {
-  calculateHackingChance,
-  calculateHackingExpGain,
-  calculatePercentMoneyHacked,
-  calculateHackingTime,
-  calculateGrowTime,
-  calculateWeakenTime,
-} from "./Hacking";
-import { netscriptCanGrow, netscriptCanWeaken } from "./Hacking/netscriptCanHack";
-import { Terminal } from "./Terminal";
+  calculateAuthenticationTime,
+  calculatePasswordAttemptChaGain,
+  chargeServerMigration,
+  getBackdoorAuthTimeDebuff,
+  getSetStasisLinkDuration,
+  getStasisLinkLimit,
+  setStasisLink,
+} from "../DarkNet/effects/effects";
 import { Player } from "@player";
+import { formatNumber } from "../ui/formatNumber";
+import { GetServer } from "../Server/AllServers";
+import { addSessionToServer, DarknetState } from "../DarkNet/models/DarknetState";
+import { getStockFromSymbol } from "./StockMarket";
+import { CompletedProgramName } from "@enums";
+import { handleStormSeed } from "../DarkNet/effects/webstorm";
+import { getPasswordType } from "../DarkNet/controllers/ServerGenerator";
+import { checkPassword, getAuthResult, isAuthenticated } from "../DarkNet/effects/authentication";
 import {
-  CityName,
-  CodingContractName,
-  CompletedProgramName,
-  CrimeType,
-  FactionWorkType,
-  GymType,
-  JobName,
-  JobField,
-  type LiteratureName,
-  LocationName,
-  ToastVariant,
-  UniversityClassType,
-  CompanyName,
-  FactionName,
-  type MessageFilename,
-  PositionType,
-  OrderType,
-  BladeburnerActionType,
-  SpecialBladeburnerActionTypeForSleeve,
-  GangTaskNameEnum,
-} from "@enums";
-import { PromptEvent } from "./ui/React/PromptManager";
-import { GetServer } from "./Server/AllServers";
+  getLabMaze,
+  getPositionInLab,
+  getLabyrinthDetails,
+  getLabyrinthLocationReport,
+  getSurroundingsVisualized,
+  isLabyrinthServer,
+  labData,
+} from "../DarkNet/effects/labyrinth";
+import { getPhishingAttackSpeed, handlePhishingAttack } from "../DarkNet/effects/phishing";
+import { handleRamBlockRemoved } from "../DarkNet/effects/ramblock";
 import {
-  getServerOnNetwork,
-  numCycleForGrowth,
-  numCycleForGrowthCorrected,
-  processSingleServerGrowth,
-  getWeakenEffect,
-} from "./Server/ServerHelpers";
-import { influenceStockThroughServerGrow } from "./StockMarket/PlayerInfluencing";
-import { runScriptFromScript } from "./NetscriptWorker";
-import { killWorkerScript, killWorkerScriptByPid } from "./Netscript/killWorkerScript";
-import { workerScripts } from "./Netscript/WorkerScripts";
-import { WorkerScript } from "./Netscript/WorkerScript";
-import { helpers, wrapUserNode } from "./Netscript/NetscriptHelpers";
-import {
-  formatExp,
-  formatNumberNoSuffix,
-  formatMoney,
-  formatPercent,
-  formatRam,
-  formatSecurity,
-  formatThreads,
-} from "./ui/formatNumber";
-import { convertTimeMsToTimeElapsedString } from "./utils/StringHelperFunctions";
-import { roundToTwo } from "./utils/helpers/roundToTwo";
-import { arrayToString } from "./utils/helpers/ArrayHelpers";
-import { NetscriptGang } from "./NetscriptFunctions/Gang";
-import { NetscriptGo } from "./NetscriptFunctions/Go";
-import { NetscriptSleeve } from "./NetscriptFunctions/Sleeve";
-import { NetscriptExtra } from "./NetscriptFunctions/Extra";
-import { NetscriptHacknet } from "./NetscriptFunctions/Hacknet";
-import { NetscriptStanek } from "./NetscriptFunctions/Stanek";
-import { NetscriptInfiltration } from "./NetscriptFunctions/Infiltration";
-import { NetscriptUserInterface } from "./NetscriptFunctions/UserInterface";
-import { NetscriptBladeburner } from "./NetscriptFunctions/Bladeburner";
-import { NetscriptCodingContract } from "./NetscriptFunctions/CodingContract";
-import { NetscriptCorporation } from "./NetscriptFunctions/Corporation";
-import { NetscriptFormulas } from "./NetscriptFunctions/Formulas";
-import { NetscriptStockMarket } from "./NetscriptFunctions/StockMarket";
-import { NetscriptGrafting } from "./NetscriptFunctions/Grafting";
-import type { NS, RecentScript, ProcessInfo, NSEnums, Server as NSInterfaceServer } from "@nsdefs";
-import { NetscriptSingularity } from "./NetscriptFunctions/Singularity";
-import { NetscriptCloud } from "./NetscriptFunctions/Cloud";
+  expectDarknetAccess,
+  expectRunningOnDarknetServer,
+  checkDarknetServer,
+  getTimeoutChance,
+  isDirectConnected,
+  logger,
+} from "../DarkNet/effects/offlineServerHandling";
+import { DarknetServer } from "../Server/DarknetServer";
+import { exampleDarknetServerDetails, GenericResponseMessage, ResponseCodeEnum } from "../DarkNet/Enums";
+import { getRewardFromCache } from "../DarkNet/effects/cacheFiles";
+import { CONSTANTS } from "../Constants";
+import { getStasisLinkServers } from "../DarkNet/utils/darknetNetworkUtils";
+import { resolveCacheFilePath } from "../Paths/CacheFilePath";
+import type { CacheResult } from "@nsdefs";
+import { MAX_PASSWORD_LENGTH } from "../DarkNet/Constants";
+import { isIPAddress } from "../Types/strings";
+import { type DarknetServerData, getDarknetServerOrThrow } from "../DarkNet/utils/darknetServerUtils";
+import { shuffle } from "lodash";
+import { getSharedChars } from "../DarkNet/utils/darknetAuthUtils";
+import { freezeServer } from "../DarkNet/controllers/NetworkMovement";
+import { getServerLogs } from "../DarkNet/models/packetSniffing";
 
-import { dialogBoxCreate } from "./ui/React/DialogBox";
-import { SnackbarEvents } from "./ui/React/Snackbar";
-import { matchScriptPathExact } from "./utils/helpers/scriptKey";
-
-import { Flags } from "./NetscriptFunctions/Flags";
-import { calculateCurrentShareBonus, ShareBonusTime, startSharing } from "./NetworkShare/Share";
-import { recentScripts } from "./Netscript/RecentScripts";
-import { InternalAPI, setRemovedFunctions, NSProxy } from "./Netscript/APIWrapper";
-import { INetscriptExtra } from "./NetscriptFunctions/Extra";
-import { ScriptDeath } from "./Netscript/ScriptDeath";
-import { getBitNodeMultipliers } from "./BitNode/BitNode";
-import { assert, assertArray, assertString, assertObject } from "./utils/TypeAssertion";
-import { escapeRegExp } from "lodash";
-import { FilePath, resolveFilePath } from "./Paths/FilePath";
-import { hasScriptExtension } from "./Paths/ScriptFilePath";
-import { hasTextExtension } from "./Paths/TextFilePath";
-import { ContentFilePath } from "./Paths/ContentFile";
-import { hasContractExtension } from "./Paths/ContractFilePath";
-import { getRamCost, RamCostConstants } from "./Netscript/RamCostGenerator";
-import { getEnumHelper } from "./utils/EnumHelper";
-import { ServerConstants } from "./Server/data/Constants";
-import { assertFunctionWithNSContext } from "./Netscript/TypeAssertion";
-import { Router } from "./ui/GameRoot";
-import { Page } from "./ui/Router";
-import { getDarknetPropertiesForDeprecationSupport, NetscriptDarknet } from "./NetscriptFunctions/Darknet";
-import { canAccessBitNodeFeature } from "./BitNode/BitNodeUtils";
-import { validBitNodes } from "./BitNode/Constants";
-import { isIPAddress } from "./Types/strings";
-import { compile } from "./NetscriptJSEvaluator";
-import { Script } from "./Script/Script";
-import { NetscriptFormat } from "./NetscriptFunctions/Format";
-import { checkDarknetServer } from "./DarkNet/effects/offlineServerHandling";
-import { DarknetServer } from "./Server/DarknetServer";
-import { FragmentTypeEnum } from "./CotMG/FragmentType";
-import { exampleDarknetServerData, ResponseCodeEnum } from "./DarkNet/Enums";
-import { renderToStaticMarkup } from "react-dom/server";
-import { Literatures } from "./Literature/Literatures";
-import { Messages } from "./Message/MessageHelpers";
-import { setDeprecatedProperties } from "./utils/DeprecationHelper";
-
-export const enums: NSEnums = {
-  CityName,
-  CrimeType,
-  FactionWorkType,
-  GymType,
-  JobName,
-  JobField,
-  LocationName,
-  ToastVariant,
-  UniversityClassType,
-  CompanyName,
-  FactionName,
-  CodingContractName,
-  PositionType,
-  OrderType,
-  BladeburnerActionType,
-  SpecialBladeburnerActionTypeForSleeve,
-  FragmentType: FragmentTypeEnum,
-  DarknetResponseCode: ResponseCodeEnum,
-  ProgramName: CompletedProgramName,
-  GangTaskName: GangTaskNameEnum,
+type CompleteHeartbleedOptions = {
+  peek: boolean;
+  logsToCapture: number;
+  additionalMsec: number;
 };
-for (const val of Object.values(enums)) Object.freeze(val);
-Object.freeze(enums);
 
-export type NSFull = Readonly<Omit<NS & INetscriptExtra, "pid" | "args" | "enums">>;
-
-export const ns: InternalAPI<NSFull> = {
-  singularity: NetscriptSingularity(),
-  format: NetscriptFormat(),
-  gang: NetscriptGang(),
-  go: NetscriptGo(),
-  dnet: NetscriptDarknet(),
-  bladeburner: NetscriptBladeburner(),
-  codingcontract: NetscriptCodingContract(),
-  sleeve: NetscriptSleeve(),
-  corporation: NetscriptCorporation(),
-  stanek: NetscriptStanek(),
-  infiltration: NetscriptInfiltration(),
-  ui: NetscriptUserInterface(),
-  formulas: NetscriptFormulas(),
-  stock: NetscriptStockMarket(),
-  grafting: NetscriptGrafting(),
-  hacknet: NetscriptHacknet(),
-  cloud: NetscriptCloud(),
-  sprintf: (ctx, _format, ...args) => {
-    const format = helpers.string(ctx, "format", _format);
-    return sprintf(format, ...args);
-  },
-  vsprintf: (ctx, _format, _args) => {
-    const format = helpers.string(ctx, "format", _format);
-    if (!Array.isArray(_args)) {
-      throw helpers.errorMessage(ctx, `args must be an array.`);
-    }
-    return vsprintf(format, _args);
-  },
-  scan: (ctx, _host, _returnOpts) => {
-    const returnOpts = helpers.hostReturnOptions(_returnOpts);
-    const [server, host] = helpers.getServer(ctx, _host);
-    const out: string[] = [];
-    if (!server) {
-      return out;
-    }
-    for (let i = 0; i < server.serversOnNetwork.length; i++) {
-      const s = getServerOnNetwork(server, i);
-      if (s === null || s instanceof DarknetServer) continue;
-      const entry = helpers.returnServerID(s, returnOpts);
-      if (entry === null) continue;
-      out.push(entry);
-    }
-    helpers.log(ctx, () => `returned ${out.length} connections for ${host}`);
-    return out;
-  },
-  hasTorRouter: () => Player.hasTorRouter(),
-  hack: (ctx, _host?, opts?) => {
-    return helpers.hack(ctx, _host, false, opts);
-  },
-  hackAnalyzeThreads: (ctx, _host, _hackAmount) => {
-    const hackAmount = helpers.number(ctx, "hackAmount", _hackAmount);
-
-    // Check argument validity
-    const server = helpers.getNormalServer(ctx, _host);
-    if (isNaN(hackAmount)) {
-      throw helpers.errorMessage(
-        ctx,
-        `Invalid hackAmount argument passed into hackAnalyzeThreads: ${hackAmount}. Must be numeric.`,
-      );
-    }
-
-    if (hackAmount < 0 || hackAmount > server.moneyAvailable) {
-      return -1;
-    } else if (hackAmount === 0) {
-      return 0;
-    }
-
-    const percentHacked = calculatePercentMoneyHacked(server, Player);
-
-    if (percentHacked === 0 || server.moneyAvailable === 0) {
-      return -1; // To prevent returning infinity below
-    }
-
-    return hackAmount / (server.moneyAvailable * percentHacked);
-  },
-  hackAnalyze: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-
-    return calculatePercentMoneyHacked(server, Player);
-  },
-  hackAnalyzeSecurity: (ctx, _threads, _host?) => {
-    let threads = helpers.number(ctx, "threads", _threads);
-    if (_host) {
-      const server = helpers.getNormalServer(ctx, _host);
-
-      const percentHacked = calculatePercentMoneyHacked(server, Player);
-
-      if (percentHacked > 0) {
-        // thread count is limited to the maximum number of threads needed
-        threads = Math.min(threads, Math.ceil(1 / percentHacked));
-      }
-    }
-
-    return ServerConstants.ServerFortifyAmount * threads;
-  },
-  hackAnalyzeChance: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-
-    return calculateHackingChance(server, Player);
-  },
-  sleep: (ctx, _time = 0) => {
-    const time = helpers.number(ctx, "time", _time);
-    helpers.log(ctx, () => `Sleeping for ${convertTimeMsToTimeElapsedString(time, true)}.`);
-    return helpers.netscriptDelay(ctx, time).then(function () {
-      return Promise.resolve(true);
-    });
-  },
-  asleep: (ctx, _time = 0) => {
-    const time = helpers.number(ctx, "time", _time);
-    helpers.log(ctx, () => `Sleeping for ${convertTimeMsToTimeElapsedString(time, true)}.`);
-    return new Promise((resolve) => setTimeout(() => resolve(true), time));
-  },
-  grow: (ctx, _host, opts?) => {
-    const { threads, stock, additionalMsec } = helpers.validateHGWOptions(ctx, opts);
-
-    const server = helpers.getNormalServer(ctx, _host);
-
-    // No root access or skill level too low
-    const canHack = netscriptCanGrow(server);
-    if (!canHack.res) {
-      throw helpers.errorMessage(ctx, canHack.msg || "");
-    }
-
-    const growTime = calculateGrowTime(server, Player) + additionalMsec / 1000.0;
-    helpers.log(
+function heartbleedOptions(ctx: NetscriptContext, opts: unknown): CompleteHeartbleedOptions {
+  const defaults = {
+    peek: false,
+    logsToCapture: 1,
+    additionalMsec: 0,
+  };
+  if (opts == null) {
+    return defaults;
+  }
+  if (typeof opts !== "object") {
+    throw helpers.errorMessage(ctx, `Invalid arguments: "options" is not an object`);
+  }
+  const options = {
+    ...defaults,
+    ...opts,
+  };
+  const peek = helpers.boolean(ctx, "options.peek", options.peek);
+  const logsToCapture = helpers.positiveInteger(ctx, "options.logsToCapture", options.logsToCapture);
+  const additionalMsec = helpers.integer(ctx, "options.additionalMsec", options.additionalMsec);
+  if (additionalMsec < 0) {
+    throw helpers.errorMessage(
       ctx,
-      () =>
-        `Executing on '${server.hostname}' in ${convertTimeMsToTimeElapsedString(
-          growTime * 1000,
-          true,
-        )} (t=${formatThreads(threads)}).`,
+      `Invalid arguments: "options.additionalMsec" (${options.additionalMsec}) must be a non-negative integer`,
     );
-    return helpers.netscriptDelay(ctx, growTime * 1000).then(function () {
-      const scripthost = GetServer(ctx.workerScript.hostname);
-      if (scripthost === null) {
-        throw helpers.errorMessage(ctx, `Cannot find host of WorkerScript. Hostname: ${ctx.workerScript.hostname}.`);
+  }
+  return {
+    peek,
+    logsToCapture,
+    additionalMsec,
+  };
+}
+
+export function NetscriptDarknet(): InternalAPI<DarknetAPI> {
+  return {
+    authenticate: (ctx: NetscriptContext, _host, _password, _additionalMsec): Promise<DarknetResult> => {
+      const targetHost = helpers.string(ctx, "host", _host);
+      const password = helpers.string(ctx, "password", _password);
+      const additionalMsec = helpers.number(ctx, "additionalMsec", _additionalMsec ?? 0);
+      if (additionalMsec < 0) {
+        throw helpers.errorMessage(ctx, `Invalid arguments: "additionalMsec" is not a positive integer`);
       }
-      const moneyBefore = server.moneyAvailable;
-      const growth = processSingleServerGrowth(server, threads, scripthost.cpuCores);
-      const moneyAfter = server.moneyAvailable;
-      ctx.workerScript.scriptRef.recordGrow(server.hostname, threads);
-      const expGain = calculateHackingExpGain(server, Player) * threads;
+      if (password.length > MAX_PASSWORD_LENGTH * 2) {
+        // No password will ever be this long, and this prevents extremely long password attempts from causing performance issues,
+        // or feedback loops where longer and longer passwords are attempted due to player script bugs.
+        throw helpers.errorMessage(
+          ctx,
+          `Invalid arguments: "password" is too long. Attempted length: ${
+            password.length
+          }. Attempted password starts with ${password.slice(0, 100)} `,
+        );
+      }
+      const serverCheck = checkDarknetServer(ctx, targetHost, {
+        requireDirectConnection: true,
+      });
+      if (!serverCheck.success) {
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: serverCheck.code,
+          message: serverCheck.message,
+        }));
+      }
+      const server = serverCheck.server;
+
+      const threads = ctx.workerScript.scriptRef.threads;
+      const sharedChars = getSharedChars(server.password, password);
+      const networkDelay = calculateAuthenticationTime(server, Player, threads, sharedChars) + additionalMsec;
+
+      logger(ctx)(
+        `Connecting to ${server.hostname} with password '${password}'... (Est: ${formatNumber(
+          networkDelay / 1000,
+          1,
+        )}s)`,
+      );
+
+      return helpers.netscriptDelay(ctx, networkDelay).then(() => {
+        const serverCheck = checkDarknetServer(ctx, targetHost, { requireDirectConnection: true });
+        if (!serverCheck.success) {
+          return helpers.netscriptDelay(ctx, 100).then(() => ({
+            success: false,
+            code: serverCheck.code,
+            message: serverCheck.message,
+          }));
+        }
+
+        const server = serverCheck.server;
+        // Authentication has a chance to timeout based on darknet instability
+        if (Math.random() < getTimeoutChance()) {
+          logger(ctx)(`Authentication to ${server.hostname} timed out due to network instability. Please try again.`);
+          return {
+            success: false,
+            code: ResponseCodeEnum.RequestTimeOut,
+            message: GenericResponseMessage.RequestTimeOut,
+          };
+        }
+
+        const authResult = getAuthResult(server, password, threads, networkDelay, ctx.workerScript.pid);
+        const success = authResult.result.success;
+        const xp = formatNumber(calculatePasswordAttemptChaGain(server, threads, success), 1);
+        logger(ctx)(`Authentication on ${server.hostname} ${success ? "succeeded" : "failed"}. (Gained ${xp} cha xp)`);
+
+        if (isLabyrinthServer(server.hostname)) {
+          return {
+            success: success,
+            code: success ? ResponseCodeEnum.Success : ResponseCodeEnum.AuthFailure,
+            message: authResult.response.message,
+            data: authResult.response.data,
+          };
+        }
+
+        return {
+          success: success,
+          code: success ? ResponseCodeEnum.Success : ResponseCodeEnum.AuthFailure,
+          message: success ? GenericResponseMessage.Success : GenericResponseMessage.AuthFailure,
+        };
+      });
+    },
+    connectToSession: (ctx: NetscriptContext, _host, _password): DarknetResult => {
+      const targetHost = helpers.string(ctx, "host", _host);
+      const token = helpers.string(ctx, "password", _password);
+      if (token.length > 100) {
+        throw helpers.errorMessage(
+          ctx,
+          `Invalid arguments: "password" is too long. Attempted length: ${
+            token.length
+          }. Attempted password starts with ${token.slice(0, 100)} `,
+        );
+      }
+      const serverCheck = checkDarknetServer(ctx, targetHost, {
+        requireAdminRights: true,
+      });
+      if (!serverCheck.success) {
+        return {
+          success: false,
+          code: serverCheck.code,
+          message: serverCheck.message,
+        };
+      }
+      const server = serverCheck.server;
+
+      const result = checkPassword(server, token, ctx.workerScript.scriptRef.threads, ctx.workerScript.pid);
+      if (result.code !== ResponseCodeEnum.Success) {
+        logger(ctx)(
+          `${server.hostname} does not recognise that password. Use ns.dnet.authenticate() to create a session.`,
+        );
+        return {
+          success: false,
+          code: ResponseCodeEnum.AuthFailure,
+          message: GenericResponseMessage.AuthFailure,
+        };
+      }
+      addSessionToServer(server, ctx.workerScript.pid);
+      logger(ctx)(`Authentication on ${server.hostname} succeeded.`);
+      return {
+        success: true,
+        code: ResponseCodeEnum.Success,
+        message: GenericResponseMessage.Success,
+      };
+    },
+    freezeServer: (ctx: NetscriptContext, _host) => {
+      const targetHost = helpers.string(ctx, "host", _host);
+      const serverCheck = checkDarknetServer(ctx, targetHost, {
+        requireDirectConnection: true,
+      });
+      if (!serverCheck.success) {
+        return {
+          success: false,
+          code: serverCheck.code,
+          message: serverCheck.message,
+        };
+      }
+      freezeServer(serverCheck.server);
+      logger(ctx)(`Froze ${serverCheck.server.hostname}`);
+      return {
+        success: true,
+        code: ResponseCodeEnum.Success,
+        message: GenericResponseMessage.Success,
+      };
+    },
+    heartbleed: (ctx: NetscriptContext, _host, _opts): Promise<DarknetResult & { logs: string[] }> => {
+      const targetHost = helpers.string(ctx, "host", _host ?? ctx.workerScript.hostname);
+      const options = heartbleedOptions(ctx, _opts);
+      const serverCheck = checkDarknetServer(ctx, targetHost, {
+        requireDirectConnection: true,
+      });
+      if (!serverCheck.success) {
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: serverCheck.code,
+          message: serverCheck.message,
+          logs: [],
+        }));
+      }
+      const server = serverCheck.server;
+      const networkDelay =
+        calculateAuthenticationTime(server, Player, ctx.workerScript.scriptRef.threads) * 1.5 +
+        (options.additionalMsec ?? 0);
+      logger(ctx)(
+        `Attempting to extract data from ${server.hostname}... (Est: ${formatNumber(networkDelay / 1000, 1)}s)`,
+      );
+      DarknetState.hasUsedHeartbleed = true;
+
+      if (Player.skills.charisma < server.requiredCharismaSkill) {
+        logger(ctx)(
+          `You need a higher charisma level to extract data from ${server.hostname}. (${server.requiredCharismaSkill} required)`,
+        );
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: ResponseCodeEnum.NotEnoughCharisma,
+          message: GenericResponseMessage.NotEnoughCharisma,
+          logs: [],
+        }));
+      }
+
+      return helpers.netscriptDelay(ctx, networkDelay).then(() => {
+        const xpGained = Player.mults.charisma_exp * 50 * ((500 + Player.skills.charisma) / 500);
+        Player.gainCharismaExp(xpGained);
+
+        const serverCheck = checkDarknetServer(ctx, targetHost, { requireDirectConnection: true });
+        if (!serverCheck.success) {
+          return {
+            success: false,
+            code: serverCheck.code,
+            message: serverCheck.message,
+            logs: [],
+          };
+        }
+        const capturedLogs = getServerLogs(server, options.logsToCapture, options.peek);
+        logger(ctx)(`Extracted log data from ${server.hostname}... (Gained ${formatNumber(xpGained, 1)} cha xp)`);
+
+        return {
+          success: true,
+          code: ResponseCodeEnum.Success,
+          message: GenericResponseMessage.Success,
+          logs: capturedLogs.map((log) =>
+            typeof log.message === "string" ? log.message : JSON.stringify(log.message),
+          ),
+        };
+      });
+    },
+    openCache: (ctx: NetscriptContext, _fileName, _suppressToast): CacheResult => {
+      const fileName = helpers.string(ctx, "fileName", _fileName);
+      const suppressToast = helpers.boolean(ctx, "suppressToast", _suppressToast ?? false);
+      const server = expectRunningOnDarknetServer(ctx);
+      expectDarknetAccess(ctx);
+
+      const path = resolveCacheFilePath(fileName);
+      if (!path) {
+        throw helpers.errorMessage(ctx, `Invalid cache file. (File must end in .cache) : ${fileName}`);
+      }
+      const hasCacheFile = server.caches.includes(path);
+      if (!hasCacheFile) {
+        throw helpers.errorMessage(ctx, `Cache file not found: ${fileName} on server ${server.hostname}`);
+      }
+
+      server.caches = server.caches.filter((cache) => cache !== fileName);
+      const result = getRewardFromCache(server, fileName, suppressToast);
+      logger(ctx)(`Data file ${fileName} opened. ${result.message}.`);
+      return result;
+    },
+    probe: (ctx: NetscriptContext, _returnByIp): string[] => {
+      const returnByIP = helpers.boolean(ctx, "returnByIP", _returnByIp ?? false);
+      expectDarknetAccess(ctx);
+      const server = ctx.workerScript.getServer();
+      const out = [];
+      for (const neighbor of server.serversOnNetwork) {
+        const neighborServer = GetServer(neighbor);
+        if (!(neighborServer instanceof DarknetServer)) {
+          continue;
+        }
+        const entry = helpers.returnServerID(neighborServer, { returnByIP });
+        if (entry) {
+          out.push(entry);
+        }
+      }
+      helpers.log(ctx, () => `Returned ${out.length} connections for ${server.hostname}`);
+      // The order of results is shuffled. This is to avoid clues to the network structure
+      // like there are in the standard network's scan results order.
+      return shuffle(out);
+    },
+    setStasisLink: (ctx: NetscriptContext, _shouldLink): Promise<DarknetResult> => {
+      const shouldLink = helpers.boolean(ctx, "shouldLink", _shouldLink ?? true);
+      const targetHost = ctx.workerScript.getServer().hostname;
+      const serverCheck = checkDarknetServer(ctx, targetHost);
+      if (!serverCheck.success) {
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: serverCheck.code,
+          message: serverCheck.message,
+        }));
+      }
+      const server = serverCheck.server;
+      const stasisLinkCount = getStasisLinkServers().length;
+      const stasisLinkLimit = getStasisLinkLimit();
+      if (shouldLink && stasisLinkCount >= stasisLinkLimit) {
+        helpers.log(ctx, () => `Stasis link limit reached. (${stasisLinkCount}/${stasisLinkLimit})`);
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: ResponseCodeEnum.StasisLinkLimitReached,
+          message: GenericResponseMessage.StasisLinkLimitReached,
+        }));
+      }
       helpers.log(
         ctx,
-        () =>
-          `Available money on '${server.hostname}' grown by ${formatPercent(growth - 1, 6)}. Gained ${formatExp(
-            expGain,
-          )} hacking exp (t=${formatThreads(threads)}).`,
+        () => `Beginning stasis ${shouldLink ? "" : "removal "}procedure on ${server.hostname}... (Est: 30s)`,
       );
-      ctx.workerScript.scriptRef.onlineExpGained += expGain;
-      Player.gainHackingExp(expGain);
-      if (stock) {
-        influenceStockThroughServerGrow(server, moneyAfter - moneyBefore);
+      // setStasisLink's delay is hardcoded at 30s. We should skip this delay in Jest tests.
+      return helpers.netscriptDelay(ctx, getSetStasisLinkDuration()).then(() => setStasisLink(ctx, server, shouldLink));
+    },
+    getStasisLinkLimit: (ctx: NetscriptContext): number => {
+      expectDarknetAccess(ctx);
+      const limit = getStasisLinkLimit();
+      logger(ctx)(`Stasis link limit: ${limit}`);
+      return limit;
+    },
+    getStasisLinkedServers: (ctx: NetscriptContext, _returnByIP): string[] => {
+      const returnByIp = helpers.boolean(ctx, "returnByIP", _returnByIP ?? false);
+      expectDarknetAccess(ctx);
+      const servers = getStasisLinkServers();
+      const serverNames = servers.map((s) => (returnByIp ? s.ip : s.hostname));
+      logger(ctx)(`Stasis linked servers: ${serverNames}`);
+      return serverNames;
+    },
+    getServerDetails: (ctx, _host) => {
+      const targetHost = helpers.string(ctx, "host", _host ?? ctx.workerScript.hostname);
+      const serverCheck = checkDarknetServer(ctx, targetHost);
+      if (!serverCheck.success) {
+        logger(ctx)(serverCheck.message);
+        return {
+          ...exampleDarknetServerDetails,
+          isOnline: false,
+        } satisfies ReturnType<DarknetAPI["getServerDetails"]>;
       }
-      return Promise.resolve(server.moneyMax === 0 ? 0 : growth);
-    });
-  },
-  growthAnalyze: (ctx, _host, _multiplier, _cores = 1) => {
-    const mult = helpers.number(ctx, "multiplier", _multiplier);
-    const cores = helpers.positiveInteger(ctx, "cores", _cores);
-
-    // Check argument validity
-    const server = helpers.getNormalServer(ctx, _host);
-    if (!Number.isFinite(mult) || mult < 1) {
-      throw helpers.errorMessage(ctx, `Invalid argument: multiplier must be finite and >= 1, is ${mult}.`);
-    }
-
-    return numCycleForGrowth(server, mult, cores);
-  },
-  growthAnalyzeSecurity: (ctx, _threads, _host?, _cores = 1) => {
-    let threads = helpers.number(ctx, "threads", _threads);
-    if (_host) {
-      const cores = helpers.number(ctx, "cores", _cores);
-      const server = helpers.getNormalServer(ctx, _host);
-
-      const maxThreadsNeeded = Math.ceil(
-        numCycleForGrowthCorrected(server, server.moneyMax, server.moneyAvailable, cores),
-      );
-
-      threads = Math.min(threads, maxThreadsNeeded);
-    }
-
-    return 2 * ServerConstants.ServerFortifyAmount * threads;
-  },
-  weaken: async (ctx, _host?, opts?) => {
-    const { threads, additionalMsec } = helpers.validateHGWOptions(ctx, opts);
-
-    const server = helpers.getNormalServer(ctx, _host);
-
-    // No root access or skill level too low
-    const canHack = netscriptCanWeaken(server);
-    if (!canHack.res) {
-      throw helpers.errorMessage(ctx, canHack.msg || "");
-    }
-
-    const weakenTime = calculateWeakenTime(server, Player) + additionalMsec / 1000.0;
-    helpers.log(
-      ctx,
-      () =>
-        `Executing on '${server.hostname}' in ${convertTimeMsToTimeElapsedString(
-          weakenTime * 1000,
-          true,
-        )} (t=${formatThreads(threads)})`,
-    );
-    return helpers.netscriptDelay(ctx, weakenTime * 1000).then(function () {
-      const scripthost = GetServer(ctx.workerScript.hostname);
-      if (scripthost === null) {
-        throw helpers.errorMessage(ctx, `Cannot find host of WorkerScript. Hostname: ${ctx.workerScript.hostname}.`);
+      const targetServer = serverCheck.server;
+      const localServer = ctx.workerScript.getServer();
+      const isConnected = isDirectConnected(localServer, targetServer);
+      const hasSession = isAuthenticated(targetServer, ctx.workerScript.pid);
+      const depth = isLabyrinthServer(targetServer.hostname)
+        ? labData[targetServer.hostname].depth
+        : targetServer.depth;
+      return {
+        isOnline: true,
+        isConnectedToCurrentServer: isConnected,
+        hasSession,
+        modelId: targetServer.modelId,
+        passwordHint: targetServer.staticPasswordHint,
+        data: targetServer.passwordHintData ?? "",
+        logTrafficInterval: targetServer.logTrafficInterval,
+        passwordLength: targetServer.password.length,
+        passwordFormat: getPasswordType(targetServer.password),
+        blockedRam: targetServer.blockedRam,
+        difficulty: targetServer.difficulty,
+        requiredCharismaSkill: targetServer.requiredCharismaSkill,
+        depth: depth,
+        isStationary: targetServer.isStationary,
+      } satisfies ReturnType<DarknetAPI["getServerDetails"]>;
+    },
+    induceServerMigration: (ctx, _host): Promise<DarknetResult & { progress: number }> => {
+      const targetHost = helpers.string(ctx, "host", _host);
+      const currentProgress = DarknetState.migrationInductionServers.get(targetHost) ?? 0;
+      const serverCheck = checkDarknetServer(ctx, targetHost, {
+        requireDirectConnection: true,
+        preventUseOnStationaryServers: true,
+      });
+      if (!serverCheck.success) {
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: serverCheck.code,
+          message: serverCheck.message,
+          progress: currentProgress,
+        }));
       }
-      const weakenAmt = getWeakenEffect(threads, scripthost.cpuCores);
-      const securityBeforeWeaken = server.hackDifficulty;
-      server.weaken(weakenAmt);
-      const securityAfterWeaken = server.hackDifficulty;
-      const securityReduction = securityBeforeWeaken - securityAfterWeaken;
-      ctx.workerScript.scriptRef.recordWeaken(server.hostname, threads);
-      const expGain = calculateHackingExpGain(server, Player) * threads;
-      helpers.log(
-        ctx,
-        () =>
-          `'${server.hostname}' security level weakened to ${server.hackDifficulty}. Gained ${formatExp(
-            expGain,
-          )} hacking exp (t=${formatThreads(threads)})`,
-      );
-      ctx.workerScript.scriptRef.onlineExpGained += expGain;
-      Player.gainHackingExp(expGain);
-      // Account for hidden multiplier in Server.weaken()
-      return Promise.resolve(securityReduction);
-    });
-  },
-  weakenAnalyze: (ctx, _threads, _cores = 1) => {
-    const threads = helpers.number(ctx, "threads", _threads);
-    const cores = helpers.number(ctx, "cores", _cores);
-    return getWeakenEffect(threads, cores);
-  },
-  share: (ctx) => {
-    const threads = ctx.workerScript.scriptRef.threads;
-    const hostname = ctx.workerScript.hostname;
-    helpers.log(ctx, () => `Sharing ${threads} threads on ${hostname}.`);
-    const end = startSharing(threads, ctx.workerScript.getServer().cpuCores);
-    return helpers.netscriptDelay(ctx, ShareBonusTime).finally(function () {
-      helpers.log(ctx, () => `Finished sharing ${threads} threads on ${hostname}.`);
-      end();
-    });
-  },
-  getSharePower: () => {
-    return calculateCurrentShareBonus();
-  },
-  print: (ctx, ...args) => {
-    if (args.length === 0) {
-      throw helpers.errorMessage(ctx, "Takes at least 1 argument.");
-    }
-    ctx.workerScript.print(helpers.argsToString(args));
-  },
-  printf: (ctx, _format, ...args) => {
-    const format = helpers.string(ctx, "format", _format);
-    if (typeof format !== "string") {
-      throw helpers.errorMessage(ctx, "First argument must be string for the format.");
-    }
-    ctx.workerScript.print(vsprintf(format, args));
-  },
-  tprint: (ctx, ...args) => {
-    if (args.length === 0) {
-      throw helpers.errorMessage(ctx, "Takes at least 1 argument.");
-    }
-    const str = helpers.argsToString(args);
-    const color = helpers.getTextColor(str);
-    switch (color) {
-      case "error":
-      case "success":
-      case "warn":
-      case "info": {
-        Terminal[color](`${ctx.workerScript.name}: ${str}`);
-        break;
+      const hostOfCurrentServer = !isIPAddress(targetHost)
+        ? ctx.workerScript.hostname
+        : getDarknetServerOrThrow(ctx.workerScript.hostname).ip;
+      if (targetHost === hostOfCurrentServer) {
+        const message = `Cannot induce migration on a script's own server. induceServerMigration must target a neighboring connected server.`;
+        logger(ctx)(message);
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: ResponseCodeEnum.DirectConnectionRequired,
+          message: message,
+          progress: currentProgress,
+        }));
       }
-      case "primary": {
-        Terminal.print(`${ctx.workerScript.name}: ${str}`);
-        break;
-      }
-    }
-  },
-  tprintf: (ctx, _format, ...args) => {
-    const format = helpers.string(ctx, "format", _format);
-    const str = vsprintf(format, args);
-    const color = helpers.getTextColor(str);
-    switch (color) {
-      case "error":
-      case "success":
-      case "warn":
-      case "info": {
-        Terminal[color](`${str}`);
-        break;
-      }
-      case "primary": {
-        Terminal.print(`${str}`);
-        break;
-      }
-    }
-  },
-  clearLog: (ctx) => {
-    ctx.workerScript.scriptRef.clearLog();
-  },
-  disableLog: (ctx, _fn) => {
-    const fn = helpers.string(ctx, "fn", _fn);
-    if (possibleLogs[fn] === undefined) {
-      throw helpers.errorMessage(ctx, `Invalid argument: ${fn}.`);
-    }
-    if (fn === "ALL") {
-      ctx.workerScript.disableLogs = allDisabled;
-      // No need to log here, it's been disabled.
-    } else {
-      // We don't track individual log entries when all are disabled.
-      if (!ctx.workerScript.disableLogs["ALL"]) {
-        ctx.workerScript.disableLogs[fn] = true;
-        helpers.log(ctx, () => `Disabled logging for ${fn}`);
-      }
-    }
-  },
-  enableLog: (ctx, _fn) => {
-    const fn = helpers.string(ctx, "fn", _fn);
-    if (possibleLogs[fn] === undefined) {
-      throw helpers.errorMessage(ctx, `Invalid argument: ${fn}.`);
-    }
-    if (fn === "ALL") {
-      ctx.workerScript.disableLogs = {};
-      helpers.log(ctx, () => `Enabled logging for all functions`);
-    } else {
-      if (ctx.workerScript.disableLogs["ALL"]) {
-        // As an optimization, we normally store only that key, but we have to
-        // expand it out to all keys at this point.
-        // Conveniently, possibleLogs serves as a model for "all keys disabled."
-        ctx.workerScript.disableLogs = Object.assign({}, possibleLogs, { ALL: false, [fn]: false });
-      } else {
-        ctx.workerScript.disableLogs[fn] = false;
-      }
-      helpers.log(ctx, () => `Enabled logging for ${fn}`);
-    }
-  },
-  isLogEnabled: (ctx, _fn) => {
-    const fn = helpers.string(ctx, "fn", _fn);
-    if (possibleLogs[fn] === undefined) {
-      throw helpers.errorMessage(ctx, `Invalid argument: ${fn}.`);
-    }
-    return ctx.workerScript.shouldLog(fn);
-  },
-  getScriptLogs: (ctx, scriptID, host, ...scriptArgs) => {
-    const ident = helpers.scriptIdentifier(ctx, scriptID, host, scriptArgs);
-    const runningScriptObj = helpers.getRunningScript(ctx, ident);
-    if (runningScriptObj == null) {
-      helpers.log(ctx, () => helpers.getCannotFindRunningScriptErrorMessage(ident));
-      return [] as string[];
-    }
+      const server = serverCheck.server;
+      logger(ctx)(`Inducing server migration of ${server.hostname}... (Est: 6s)`);
 
-    return runningScriptObj.logs.map((x) => String(x));
-  },
-  nuke: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    if (server.hasAdminRights) {
-      helpers.log(ctx, () => `Already have root access to '${server.hostname}'.`);
-      return true;
-    }
-    if (!Player.hasProgram(CompletedProgramName.nuke)) {
-      helpers.log(ctx, () => "You do not have the NUKE.exe virus!");
-      return false;
-    }
-    if (server.openPortCount < server.numOpenPortsRequired) {
-      helpers.log(ctx, () => "Not enough ports opened to use NUKE.exe virus.");
-      return false;
-    }
-    server.hasAdminRights = true;
-    helpers.log(ctx, () => `Executed NUKE.exe virus on '${server.hostname}' to gain root access.`);
-    return true;
-  },
-  brutessh: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    if (!Player.hasProgram(CompletedProgramName.bruteSsh)) {
-      helpers.log(ctx, () => "You do not have the BruteSSH.exe program!");
-      return false;
-    }
-    if (!server.sshPortOpen) {
-      helpers.log(ctx, () => `Executed BruteSSH.exe on '${server.hostname}' to open SSH port (22).`);
-      server.sshPortOpen = true;
-      ++server.openPortCount;
-    } else {
-      helpers.log(ctx, () => `SSH Port (22) already opened on '${server.hostname}'.`);
-    }
-    return true;
-  },
-  ftpcrack: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    if (!Player.hasProgram(CompletedProgramName.ftpCrack)) {
-      helpers.log(ctx, () => "You do not have the FTPCrack.exe program!");
-      return false;
-    }
-    if (!server.ftpPortOpen) {
-      helpers.log(ctx, () => `Executed FTPCrack.exe on '${server.hostname}' to open FTP port (21).`);
-      server.ftpPortOpen = true;
-      ++server.openPortCount;
-    } else {
-      helpers.log(ctx, () => `FTP Port (21) already opened on '${server.hostname}'.`);
-    }
-    return true;
-  },
-  relaysmtp: (ctx, _host) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    if (!Player.hasProgram(CompletedProgramName.relaySmtp)) {
-      helpers.log(ctx, () => "You do not have the relaySMTP.exe program!");
-      return false;
-    }
-    if (!server.smtpPortOpen) {
-      helpers.log(ctx, () => `Executed relaySMTP.exe on '${server.hostname}' to open SMTP port (25).`);
-      server.smtpPortOpen = true;
-      ++server.openPortCount;
-    } else {
-      helpers.log(ctx, () => `SMTP Port (25) already opened on '${server.hostname}'.`);
-    }
-    return true;
-  },
-  httpworm: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    if (!Player.hasProgram(CompletedProgramName.httpWorm)) {
-      helpers.log(ctx, () => "You do not have the HTTPWorm.exe program!");
-      return false;
-    }
-    if (!server.httpPortOpen) {
-      helpers.log(ctx, () => `Executed HTTPWorm.exe on '${server.hostname}' to open HTTP port (80).`);
-      server.httpPortOpen = true;
-      ++server.openPortCount;
-    } else {
-      helpers.log(ctx, () => `HTTP Port (80) already opened on '${server.hostname}'.`);
-    }
-    return true;
-  },
-  sqlinject: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    if (!Player.hasProgram(CompletedProgramName.sqlInject)) {
-      helpers.log(ctx, () => "You do not have the SQLInject.exe program!");
-      return false;
-    }
-    if (!server.sqlPortOpen) {
-      helpers.log(ctx, () => `Executed SQLInject.exe on '${server.hostname}' to open SQL port (1433).`);
-      server.sqlPortOpen = true;
-      ++server.openPortCount;
-    } else {
-      helpers.log(ctx, () => `SQL Port (1433) already opened on '${server.hostname}'.`);
-    }
-    return true;
-  },
-  run: (ctx, _scriptname, _thread_or_opt = 1, ..._args) => {
-    const path = helpers.scriptPath(ctx, "scriptname", _scriptname, true);
-    const runOpts = helpers.runOptions(ctx, _thread_or_opt);
-    const args = helpers.scriptArgs(ctx, _args);
-    const scriptServer = ctx.workerScript.getServer();
+      // induceServerMigration's delay is hardcoded at 6s. We should skip this delay in Jest tests.
+      return helpers.netscriptDelay(ctx, !CONSTANTS.isInTestEnvironment ? 6000 : 0).then(() => {
+        const serverCheck = checkDarknetServer(ctx, targetHost, {
+          requireDirectConnection: true,
+          preventUseOnStationaryServers: true,
+        });
+        if (!serverCheck.success) {
+          return helpers.netscriptDelay(ctx, 100).then(() => ({
+            success: false,
+            code: serverCheck.code,
+            message: serverCheck.message,
+            progress: DarknetState.migrationInductionServers.get(targetHost) ?? 0,
+          }));
+        }
+        const server = serverCheck.server;
+        const currentDepth = server.depth;
+        const result = chargeServerMigration(server, ctx.workerScript.scriptRef.threads);
 
-    return runScriptFromScript("run", scriptServer, path, args, ctx.workerScript, runOpts);
-  },
-  exec: (ctx, _scriptname, _host, _thread_or_opt = 1, ..._args) => {
-    const path = helpers.scriptPath(ctx, "scriptname", _scriptname, true);
-    const host = helpers.string(ctx, "host", _host);
-    const runOpts = helpers.runOptions(ctx, _thread_or_opt);
-    const args = helpers.scriptArgs(ctx, _args);
-    const serverCheck = checkDarknetServer(ctx, host, {
-      allowNonDarknet: true,
-      requireAdminRights: true,
-      requireSession: true,
-      requireDirectConnection: true,
-      backdoorBypasses: true,
-    });
-    if (!serverCheck.success) {
-      return 0;
-    }
-    return runScriptFromScript("exec", serverCheck.server, path, args, ctx.workerScript, runOpts);
-  },
-  spawn: (ctx, _scriptname, _thread_or_opt = 1, ..._args) => {
-    const path = helpers.scriptPath(ctx, "scriptname", _scriptname, true);
-    const runOpts = helpers.spawnOptions(ctx, _thread_or_opt);
-    const args = helpers.scriptArgs(ctx, _args);
-    const spawnCb = () => {
-      if (Router.page() === Page.BitVerse) {
-        helpers.log(ctx, () => `Script execution is canceled because you are in Bitverse.`);
-        return;
-      }
-      const scriptServer = GetServer(ctx.workerScript.hostname);
-      if (scriptServer == null) {
-        throw helpers.errorMessage(ctx, `Cannot find server ${ctx.workerScript.hostname}`);
+        logger(ctx)(
+          `Induced ${formatNumber(result.chargeIncrease * 100)}%. Migration prep is now at ${formatNumber(
+            result.newCharge * 100,
+          )}%. (Gained ${formatNumber(result.xpGained)} cha xp)`,
+        );
+        if (result.newCharge >= 1 && currentDepth < server.depth) {
+          logger(ctx)(`${server.hostname} has been migrated!`);
+        }
+        return {
+          success: true,
+          code: ResponseCodeEnum.Success,
+          message: GenericResponseMessage.Success,
+          progress: result.newCharge,
+        };
+      });
+    },
+    unleashStormSeed: (ctx): DarknetResult => {
+      expectDarknetAccess(ctx);
+      const server = ctx.workerScript.getServer();
+      const hasStormSeed = server.programs.includes(CompletedProgramName.stormSeed);
+      if (!hasStormSeed) {
+        const result = `${CompletedProgramName.stormSeed} not found on ${server.hostname}`;
+        logger(ctx)(result);
+        return {
+          success: false,
+          code: ResponseCodeEnum.NotFound,
+          message: GenericResponseMessage.NotFound,
+        };
       }
 
-      return runScriptFromScript("spawn", scriptServer, path, args, ctx.workerScript, runOpts);
-    };
-
-    if (runOpts.spawnDelay !== 0) {
-      setTimeout(spawnCb, runOpts.spawnDelay);
-      helpers.log(ctx, () => `Will execute '${path}' in ${runOpts.spawnDelay} milliseconds`);
-    }
-
-    helpers.log(ctx, () => "About to exit...");
-    killWorkerScript(ctx.workerScript);
-
-    if (runOpts.spawnDelay === 0) {
-      helpers.log(ctx, () => `Executing '${path}' immediately`);
-      spawnCb();
-    }
-    // This prevents error messages about statements after the spawn()
-    // trying to be executed when the script is dead.
-    throw new ScriptDeath(ctx.workerScript);
-  },
-  self: (ctx) => {
-    const runningScript = helpers.getRunningScript(ctx, ctx.workerScript.pid);
-    if (runningScript == null) throw helpers.errorMessage(ctx, "Cannot find running script. This is a bug.");
-    return helpers.createPublicRunningScript(runningScript, ctx.workerScript);
-  },
-  kill: (ctx, scriptID, _host?, ...scriptArgs) => {
-    const ident = helpers.scriptIdentifier(ctx, scriptID, _host, scriptArgs);
-    let res;
-    const killByPid = typeof ident === "number";
-    if (killByPid) {
-      // Kill by pid
-      res = killWorkerScriptByPid(ident, ctx.workerScript);
-    } else {
-      // Kill by filename/host
-      if (scriptID === undefined) {
-        throw helpers.errorMessage(ctx, "Usage: kill(scriptname, server, [arg1], [arg2]...)");
-      }
-
-      const byPid = helpers.getRunningScriptsByArgs(ctx, ident.scriptname, ident.host, ident.args);
-      if (byPid === null) {
-        helpers.log(ctx, () => helpers.getCannotFindRunningScriptErrorMessage(ident));
+      const result = `The webstorm has been unleashed...`;
+      logger(ctx)(result);
+      handleStormSeed(server);
+      return {
+        success: true,
+        code: ResponseCodeEnum.Success,
+        message: GenericResponseMessage.Success,
+      };
+    },
+    isDarknetServer: (ctx, _host) => {
+      const targetHost = helpers.string(ctx, "host", _host ?? ctx.workerScript.hostname);
+      const server = GetServer(targetHost);
+      if (!server) {
         return false;
       }
-
-      res = true;
-      for (const pid of byPid.keys()) {
-        res &&= killWorkerScriptByPid(pid, ctx.workerScript);
-      }
-    }
-
-    if (res) {
-      if (killByPid) {
-        helpers.log(ctx, () => `Killing script with PID ${ident}`);
-      } else {
-        helpers.log(ctx, () => `Killing '${scriptID}' on '${ident.host}' with args: ${arrayToString(scriptArgs)}.`);
+      if (!(server instanceof DarknetServer)) {
+        return false;
       }
       return true;
-    } else {
-      if (killByPid) {
-        helpers.log(ctx, () => `No script with PID ${ident}`);
-      } else {
-        helpers.log(
-          ctx,
-          () => `Internal error killing '${scriptID}' on '${ident.host}' with args: ${arrayToString(scriptArgs)}`,
-        );
-      }
-      return false;
-    }
-  },
-  killall: (ctx, _host?, _safetyGuard = true) => {
-    const safetyGuard = !!_safetyGuard;
-    const [server, host] = helpers.getServer(ctx, _host);
-    if (!server) return false;
-    let scriptsKilled = 0;
-
-    for (const byPid of server.runningScriptMap.values()) {
-      for (const pid of byPid.keys()) {
-        if (safetyGuard && pid == ctx.workerScript.pid) continue;
-        killWorkerScriptByPid(pid, ctx.workerScript);
-        ++scriptsKilled;
-      }
-    }
-    helpers.log(ctx, () => `Killing all scripts on '${host}'.`);
-
-    return scriptsKilled > 0;
-  },
-  exit: (ctx) => {
-    helpers.log(ctx, () => "Exiting...");
-    killWorkerScript(ctx.workerScript);
-    throw new ScriptDeath(ctx.workerScript);
-  },
-  scp: (ctx, _files, _destination, _source) => {
-    const destination = helpers.string(ctx, "destination", _destination);
-    const source = helpers.string(ctx, "source", _source ?? ctx.workerScript.hostname);
-    const destinationCheck = checkDarknetServer(ctx, destination, {
-      allowNonDarknet: true,
-      requireAdminRights: true,
-      requireSession: true,
-    });
-    if (!destinationCheck.success) {
-      return false;
-    }
-    const destServer = destinationCheck.server;
-    const [sourceServer] = helpers.getServer(ctx, source);
-    if (!sourceServer) {
-      return false;
-    }
-    const files = Array.isArray(_files) ? _files : [_files];
-    const litFiles: FilePath[] = [];
-    const contentFiles: ContentFilePath[] = [];
-    // First loop through filenames to find all errors before moving anything.
-    for (const file of files) {
-      const path = helpers.filePath(ctx, "files", file);
-      if (hasScriptExtension(path) || hasTextExtension(path)) {
-        contentFiles.push(path);
-        continue;
-      }
-      if (!path.endsWith(".lit")) {
-        throw helpers.errorMessage(
-          ctx,
-          `Cannot transfer ${path}: scp only can be used with script, text, and .lit files`,
-        );
-      }
-      litFiles.push(path);
-    }
-
-    let noFailures = true;
-    // --- Scripts and Text Files---
-    for (const contentFilePath of contentFiles) {
-      const sourceContentFile = sourceServer.getContentFile(contentFilePath);
-      if (!sourceContentFile) {
-        helpers.log(ctx, () => `File '${contentFilePath}' does not exist.`);
-        noFailures = false;
-        continue;
-      }
-      // Overwrite script if it already exists
-      const result = destServer.writeToContentFile(contentFilePath, sourceContentFile.content);
-      helpers.log(ctx, () => `Copied file ${contentFilePath} from ${sourceServer.hostname} to ${destServer.hostname}`);
-      if (result.overwritten) {
-        helpers.log(ctx, () => `Warning: ${contentFilePath} was overwritten on ${destServer.hostname}`);
-      }
-    }
-
-    // --- Literature Files ---
-    for (const litFilePath of litFiles) {
-      const sourceMessage = sourceServer.messages.find((message) => message === litFilePath);
-      if (!sourceMessage) {
-        helpers.log(ctx, () => `File '${litFilePath}' does not exist.`);
-        noFailures = false;
-        continue;
-      }
-
-      const destMessage = destServer.messages.find((message) => message === litFilePath);
-      if (destMessage) {
-        helpers.log(ctx, () => `File '${litFilePath}' was already on '${destServer.hostname}'.`);
-        continue;
-      }
-
-      // It exists in sourceServer.messages, so it's a valid name.
-      destServer.messages.push(litFilePath as LiteratureName);
-      helpers.log(ctx, () => `File '${litFilePath}' copied over to '${destServer.hostname}'.`);
-      continue;
-    }
-    return noFailures;
-  },
-  ls: (ctx, _host, _substring) => {
-    const [server] = helpers.getServer(ctx, _host);
-    const substring = helpers.string(ctx, "substring", _substring ?? "");
-    if (!server) {
-      return [];
-    }
-
-    const allFilenames = [
-      ...server.contracts.map((contract) => contract.fn),
-      ...(server instanceof DarknetServer ? server.caches : []),
-      ...server.messages,
-      ...server.programs,
-      ...server.scripts.keys(),
-      ...server.textFiles.keys(),
-    ];
-
-    if (!substring) return allFilenames.sort();
-    return allFilenames.filter((filename) => ("/" + filename).includes(substring)).sort();
-  },
-  getRecentScripts: (): RecentScript[] => {
-    return recentScripts.map((rs) => ({
-      timeOfDeath: rs.timeOfDeath,
-      ...helpers.createPublicRunningScript(rs.runningScript),
-    }));
-  },
-  ps: (ctx, _host?) => {
-    const [server] = helpers.getServer(ctx, _host);
-    const processes: ProcessInfo[] = [];
-    if (!server) return processes;
-    for (const byPid of server.runningScriptMap.values()) {
-      for (const script of byPid.values()) {
-        processes.push({
-          filename: script.filename,
-          threads: script.threads,
-          args: script.args.slice(),
-          pid: script.pid,
-          temporary: script.temporary,
-        });
-      }
-    }
-    return processes;
-  },
-  hasRootAccess: (ctx, _host?) => {
-    const [server] = helpers.getServer(ctx, _host);
-    if (!server) return false;
-    return server.hasAdminRights;
-  },
-  getHostname: (ctx) => ctx.workerScript.hostname,
-  getIP: (ctx) => {
-    const server = ctx.workerScript.getServer();
-    return server.ip;
-  },
-  getHackingLevel: (ctx) => {
-    Player.updateSkillLevels();
-    helpers.log(ctx, () => `returned ${Player.skills.hacking}`);
-    return Player.skills.hacking;
-  },
-  getHackingMultipliers: () => {
-    return {
-      chance: Player.mults.hacking_chance,
-      speed: Player.mults.hacking_speed,
-      money: Player.mults.hacking_money,
-      growth: Player.mults.hacking_grow,
-    };
-  },
-  getHacknetMultipliers: () => {
-    return {
-      production: Player.mults.hacknet_node_money,
-      purchaseCost: Player.mults.hacknet_node_purchase_cost,
-      ramCost: Player.mults.hacknet_node_ram_cost,
-      coreCost: Player.mults.hacknet_node_core_cost,
-      levelCost: Player.mults.hacknet_node_level_cost,
-    };
-  },
-  getBitNodeMultipliers: (ctx, _n = Player.bitNodeN, _lvl = Player.activeSourceFileLvl(Player.bitNodeN) + 1) => {
-    if (!canAccessBitNodeFeature(5)) {
-      throw helpers.errorMessage(ctx, "Requires Source-File 5 to run.");
-    }
-    const n = helpers.positiveInteger(ctx, "n", _n);
-    const lvl = helpers.positiveInteger(ctx, "lvl", _lvl);
-    if (!validBitNodes.includes(n)) {
-      throw new Error(`Invalid BitNode: ${n}.`);
-    }
-
-    return Object.assign({}, getBitNodeMultipliers(n, lvl));
-  },
-  getServer: (ctx, _host?) => {
-    const [server, host] = helpers.getServer(ctx, _host);
-    if (!server) {
-      // If the server is offline, return a dummy object with isOnline = false.
-      const isIp = isIPAddress(host);
-      const result = {
-        sshPortOpen: false,
-        ftpPortOpen: false,
-        smtpPortOpen: false,
-        httpPortOpen: false,
-        sqlPortOpen: false,
-        organizationName: "",
-        ...exampleDarknetServerData,
-        hostname: isIp ? "" : host,
-        ip: isIp ? host : "",
-        isOnline: false,
-      };
-      setDeprecatedProperties(result, getDarknetPropertiesForDeprecationSupport(result));
-      return result satisfies NSInterfaceServer & { isOnline: boolean };
-    }
-    const result = {
-      hostname: server.hostname,
-      ip: server.ip,
-      sshPortOpen: server.sshPortOpen,
-      ftpPortOpen: server.ftpPortOpen,
-      smtpPortOpen: server.smtpPortOpen,
-      httpPortOpen: server.httpPortOpen,
-      sqlPortOpen: server.sqlPortOpen,
-      hasAdminRights: server.hasAdminRights,
-      cpuCores: server.cpuCores,
-      isConnectedTo: server.isConnectedTo,
-      ramUsed: server.ramUsed,
-      maxRam: server.maxRam,
-      organizationName: server.organizationName,
-      purchasedByPlayer: server.purchasedByPlayer,
-      backdoorInstalled: server.backdoorInstalled,
-      baseDifficulty: server.baseDifficulty,
-      hackDifficulty: server.hackDifficulty,
-      minDifficulty: server.minDifficulty,
-      moneyAvailable: server.hostname === "home" ? Player.money : server.moneyAvailable,
-      moneyMax: server.moneyMax,
-      numOpenPortsRequired: server.numOpenPortsRequired,
-      openPortCount: server.openPortCount,
-      requiredHackingSkill: server.requiredHackingSkill,
-      serverGrowth: server.serverGrowth,
-    } satisfies NSInterfaceServer;
-
-    if (server instanceof DarknetServer) {
-      const resultWithAdditionalProps = {
-        ...result,
-        isOnline: true,
-      };
-      setDeprecatedProperties(resultWithAdditionalProps, getDarknetPropertiesForDeprecationSupport(server));
-      return resultWithAdditionalProps satisfies NSInterfaceServer & { isOnline: boolean };
-    }
-    // Throw if it's an isolated non-dnet server (e.g., pre-TOR darkweb, pre-TRP WD).
-    if (server.serversOnNetwork.length === 0) {
-      throw helpers.errorMessage(ctx, `Server ${host} does not exist.`);
-    }
-    return result;
-  },
-  getServerMoneyAvailable: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    if (server.hostname == "home") {
-      // Return player's money
-      helpers.log(ctx, () => `returned player's money: ${formatMoney(Player.money)}`);
-      return Player.money;
-    }
-    helpers.log(ctx, () => `returned ${formatMoney(server.moneyAvailable)} for '${server.hostname}'`);
-    return server.moneyAvailable;
-  },
-  getServerSecurityLevel: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    helpers.log(ctx, () => `returned ${formatSecurity(server.hackDifficulty)} for '${server.hostname}'`);
-    return server.hackDifficulty;
-  },
-  getServerBaseSecurityLevel: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    helpers.log(ctx, () => `returned ${formatSecurity(server.baseDifficulty)} for '${server.hostname}'`);
-    return server.baseDifficulty;
-  },
-  getServerMinSecurityLevel: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    helpers.log(ctx, () => `returned ${formatSecurity(server.minDifficulty)} for ${server.hostname}`);
-    return server.minDifficulty;
-  },
-  getServerRequiredHackingLevel: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    helpers.log(ctx, () => `returned ${formatNumberNoSuffix(server.requiredHackingSkill, 0)} for '${server.hostname}'`);
-    return server.requiredHackingSkill;
-  },
-  getServerMaxMoney: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    helpers.log(ctx, () => `returned ${formatMoney(server.moneyMax)} for '${server.hostname}'`);
-    return server.moneyMax;
-  },
-  getServerGrowth: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    helpers.log(ctx, () => `returned ${server.serverGrowth} for '${server.hostname}'`);
-    return server.serverGrowth;
-  },
-  getServerNumPortsRequired: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-    helpers.log(ctx, () => `returned ${server.numOpenPortsRequired} for '${server.hostname}'`);
-    return server.numOpenPortsRequired;
-  },
-  getServerMaxRam: (ctx, _host?) => {
-    const [server] = helpers.getServer(ctx, _host);
-    if (!server) return 0;
-    helpers.log(ctx, () => `returned ${formatRam(server.maxRam)}`);
-    return server.maxRam;
-  },
-  getServerUsedRam: (ctx, _host?) => {
-    const [server] = helpers.getServer(ctx, _host);
-    if (!server) return 0;
-    helpers.log(ctx, () => `returned ${formatRam(server.ramUsed)}`);
-    return server.ramUsed;
-  },
-  dnsLookup: (ctx, _host?) => {
-    const [server, host] = helpers.getServer(ctx, _host);
-    if (!server) return "";
-    return isIPAddress(host) ? server.hostname : server.ip;
-  },
-  serverExists: (ctx, _host) => {
-    const host = helpers.string(ctx, "host", _host);
-    const server = GetServer(host);
-    return server !== null && (server.serversOnNetwork.length > 0 || server instanceof DarknetServer);
-  },
-  fileExists: (ctx, _filename, _host?) => {
-    const filename = helpers.string(ctx, "filename", _filename);
-    const [server] = helpers.getServer(ctx, _host);
-    if (!server) return false;
-    const path = resolveFilePath(filename, ctx.workerScript.name);
-    if (!path) return false;
-    if (hasScriptExtension(path)) return server.scripts.has(path);
-    if (hasTextExtension(path)) return server.textFiles.has(path);
-    if (path.endsWith(".lit") || path.endsWith(".msg"))
-      return server.messages.includes(path as LiteratureName | MessageFilename);
-    if (hasContractExtension(path)) return !!server.contracts.find(({ fn }) => fn === path);
-    const lowerPath = path.toLowerCase();
-    return server.programs.map((programName) => programName.toLowerCase()).includes(lowerPath);
-  },
-  isRunning: (ctx, fn, host?, ...scriptArgs) => {
-    const ident = helpers.scriptIdentifier(ctx, fn, host, scriptArgs);
-    return helpers.getRunningScript(ctx, ident) !== null;
-  },
-  writePort: (ctx, _portNumber, data) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle.write(data);
-  },
-  write: (ctx, _filename, _data, _mode) => {
-    const filepath = helpers.filePath(ctx, "filename", _filename);
-    const data = helpers.string(ctx, "data", _data ?? "");
-    const mode = helpers.string(ctx, "mode", _mode ?? "a");
-
-    const server = ctx.workerScript.getServer();
-
-    if (hasScriptExtension(filepath)) {
-      if (mode === "w") {
-        server.writeToScriptFile(filepath, data);
-        return;
-      }
-      const existingScript = server.scripts.get(filepath);
-      const existingCode = existingScript ? existingScript.code : "";
-      server.writeToScriptFile(filepath, existingCode + data);
-      return;
-    }
-    if (!hasTextExtension(filepath)) {
-      throw helpers.errorMessage(ctx, `File path should be a text file or script. ${filepath} is invalid.`);
-    }
-    if (mode === "w") {
-      server.writeToTextFile(filepath, data);
-      return;
-    }
-    const existingTextFile = server.textFiles.get(filepath);
-    const existingText = existingTextFile?.text ?? "";
-    server.writeToTextFile(filepath, mode === "w" ? data : existingText + data);
-  },
-  tryWritePort: (ctx, _portNumber, data) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle.tryWrite(data);
-  },
-  nextPortWrite: (ctx, _portNumber) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle.nextWrite();
-  },
-  readPort: (ctx, _portNumber) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle.read();
-  },
-  read: (ctx, _filename) => {
-    const path = helpers.filePath(ctx, "filename", _filename);
-    const server = ctx.workerScript.getServer();
-    const isLiterature = path.endsWith(".lit");
-    const isMessage = path.endsWith(".msg");
-    if (isLiterature || isMessage) {
-      if (!server.messages.includes(path as LiteratureName | MessageFilename)) {
-        helpers.log(ctx, () => `${path} does not exist on ${server.hostname}.`);
-        return "";
-      }
-      return isLiterature
-        ? renderToStaticMarkup(Literatures[path as LiteratureName].text)
-        : Messages[path as MessageFilename].msg;
-    }
-
-    if (!hasScriptExtension(path) && !hasTextExtension(path)) {
-      helpers.log(ctx, () => `${path} does not exist on ${server.hostname}.`);
-      return "";
-    }
-    return server.getContentFile(path)?.content ?? "";
-  },
-  getFileMetadata: (ctx, _filename, _host?) => {
-    const path = helpers.filePath(ctx, "filename", _filename);
-    if (!hasScriptExtension(path) && !hasTextExtension(path)) {
-      throw new Error(`Invalid path: ${_filename}. It must be a text file or a script.`);
-    }
-    const [server] = helpers.getServer(ctx, _host);
-    const contentFile = server?.getContentFile(path);
-    if (!contentFile) {
-      return null;
-    }
-    return contentFile.metadata.plain();
-  },
-  peek: (ctx, _portNumber) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle.peek();
-  },
-  isFullPort: (ctx, _portNumber) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle.full();
-  },
-  isEmptyPort: (ctx, _portNumber) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle.empty();
-  },
-  clear: (ctx, _file) => {
-    const path = helpers.filePath(ctx, "file", _file);
-    if (!hasScriptExtension(path) && !hasTextExtension(path)) {
-      throw helpers.errorMessage(ctx, `Invalid file path or extension: ${_file}`);
-    }
-    const server = ctx.workerScript.getServer();
-    const file = server.getContentFile(path);
-    if (!file) throw helpers.errorMessage(ctx, `${path} does not exist on ${server.hostname}`);
-    // The content setter handles invalidating script modules where applicable.
-    file.content = "";
-  },
-  clearPort: (ctx, _portNumber) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle.clear();
-  },
-  getPortHandle: (ctx, _portNumber) => {
-    const portHandle = helpers.portHandle(ctx, _portNumber);
-    return portHandle;
-  },
-  rm: (ctx, _fn, _host?) => {
-    const filepath = helpers.filePath(ctx, "fn", _fn);
-    const [s] = helpers.getServer(ctx, _host);
-    if (!s) return false;
-    if (!filepath) {
-      helpers.log(ctx, () => `Error while parsing filepath ${filepath}`);
-      return false;
-    }
-
-    const status = s.removeFile(filepath);
-    if (!status.res) {
-      helpers.log(ctx, () => status.msg + "");
-    }
-
-    return status.res;
-  },
-  scriptRunning: (ctx, _scriptname, _host?) => {
-    const scriptname = helpers.scriptPath(ctx, "scriptname", _scriptname);
-    const [server] = helpers.getServer(ctx, _host);
-    if (!server) return false;
-    return server.isRunning(scriptname);
-  },
-  scriptKill: (ctx, _scriptname, _host?) => {
-    const path = helpers.scriptPath(ctx, "scriptname", _scriptname);
-    const [server] = helpers.getServer(ctx, _host);
-    if (!server) return false;
-    let suc = false;
-
-    const pattern = matchScriptPathExact(escapeRegExp(path));
-    for (const [key, byPid] of server.runningScriptMap) {
-      if (!pattern.test(key)) continue;
-      suc = true;
-      for (const pid of byPid.keys()) {
-        killWorkerScriptByPid(pid, ctx.workerScript);
-      }
-    }
-    return suc;
-  },
-  getScriptName: (ctx) => ctx.workerScript.name,
-  getScriptRam: (ctx, _scriptname, _host?) => {
-    const path = helpers.scriptPath(ctx, "scriptname", _scriptname);
-    const [server, host] = helpers.getServer(ctx, _host);
-    if (!server) return 0;
-    const script = server.scripts.get(path);
-    if (!script) return 0;
-    const ramUsage = script.getRamUsage(server.scripts);
-    if (!ramUsage) {
-      helpers.log(ctx, () => `Could not calculate ram usage for ${path} on ${host}.`);
-      return 0;
-    }
-    return ramUsage;
-  },
-  getRunningScript: (ctx, fn, host?, ...args) => {
-    const ident = helpers.scriptIdentifier(ctx, fn, host, args);
-    const runningScript = helpers.getRunningScript(ctx, ident);
-    if (runningScript === null) return null;
-    // Need to look this up again, because we only have ident-based lookup
-    // for RunningScript.
-    const ws = workerScripts.get(runningScript.pid);
-    // We don't check for null, since it's fine to pass null as the 2nd arg.
-    return helpers.createPublicRunningScript(runningScript, ws);
-  },
-  ramOverride: (ctx, _ram) => {
-    const newRam = roundToTwo(helpers.number(ctx, "ram", _ram || 0));
-    const rs = ctx.workerScript.scriptRef;
-    const server = ctx.workerScript.getServer();
-    if (newRam < roundToTwo(ctx.workerScript.dynamicRamUsage)) {
-      // Impossibly small, return immediately.
-      return rs.ramUsage;
-    }
-    const newServerRamUsed = roundToTwo(server.ramUsed + (newRam - rs.ramUsage) * rs.threads);
-    if (newServerRamUsed > server.maxRam) {
-      // Can't allocate more RAM.
-      return rs.ramUsage;
-    }
-    if (newServerRamUsed <= 0) {
-      throw helpers.errorMessage(
-        ctx,
-        `Game error: Calculated impossible new server ramUsed ${newServerRamUsed} from new limit of ${_ram}`,
-      );
-    }
-    server.updateRamUsed(newServerRamUsed);
-    rs.ramUsage = newRam;
-    return rs.ramUsage;
-  },
-  getHackTime: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-
-    return calculateHackingTime(server, Player) * 1000;
-  },
-  getGrowTime: (ctx, _host?) => {
-    const server = helpers.getNormalServer(ctx, _host);
-
-    return calculateGrowTime(server, Player) * 1000;
-  },
-  getWeakenTime: (ctx, _host) => {
-    const server = helpers.getNormalServer(ctx, _host);
-
-    return calculateWeakenTime(server, Player) * 1000;
-  },
-  getTotalScriptIncome: () => {
-    // First element is total income of all currently running scripts
-    let total = 0;
-    for (const script of workerScripts.values()) {
-      total += script.scriptRef.onlineMoneyMade / script.scriptRef.onlineRunningTime;
-    }
-
-    let incomeFromScriptsSinceLastAug = Player.scriptProdSinceLastAug / (Player.playtimeSinceLastAug / 1000);
-    if (!Number.isFinite(incomeFromScriptsSinceLastAug)) {
-      incomeFromScriptsSinceLastAug = 0;
-    }
-    return [total, incomeFromScriptsSinceLastAug];
-  },
-  getScriptIncome: (ctx, fn, host?, ...args) => {
-    const ident = helpers.scriptIdentifier(ctx, fn, host, args);
-    const runningScript = helpers.getRunningScript(ctx, ident);
-    if (runningScript == null) {
-      helpers.log(ctx, () => helpers.getCannotFindRunningScriptErrorMessage(ident));
-      return -1;
-    }
-    return runningScript.onlineMoneyMade / runningScript.onlineRunningTime;
-  },
-  getTotalScriptExpGain: () => {
-    let total = 0;
-    for (const ws of workerScripts.values()) {
-      total += ws.scriptRef.onlineExpGained / ws.scriptRef.onlineRunningTime;
-    }
-    return total;
-  },
-  getScriptExpGain: (ctx, fn, host?, ...args) => {
-    const ident = helpers.scriptIdentifier(ctx, fn, host, args);
-    const runningScript = helpers.getRunningScript(ctx, ident);
-    if (runningScript == null) {
-      helpers.log(ctx, () => helpers.getCannotFindRunningScriptErrorMessage(ident));
-      return -1;
-    }
-    return runningScript.onlineExpGained / runningScript.onlineRunningTime;
-  },
-  alert: (ctx, ...args) => {
-    if (args.length === 0) {
-      throw helpers.errorMessage(ctx, "Takes at least 1 argument.");
-    }
-    const message = helpers.argsToString(args);
-    dialogBoxCreate(message, { html: true, canBeDismissedEasily: true });
-  },
-  toast: (ctx, _message, _variant = ToastVariant.SUCCESS, _duration = 2000) => {
-    const message = helpers.string(ctx, "message", _message);
-    const variant = getEnumHelper("ToastVariant").nsGetMember(ctx, _variant);
-    const duration = _duration === null ? null : helpers.number(ctx, "duration", _duration);
-    SnackbarEvents.emit(message, variant as ToastVariant, duration);
-  },
-  prompt: (ctx, _txt, _options) => {
-    const options: { type?: string; choices?: string[] } = {};
-    _options ??= options;
-    const txt = helpers.string(ctx, "txt", _txt);
-    assert(_options, assertObject, (type) =>
-      helpers.errorMessage(ctx, `Invalid type for options: ${type}. Should be object.`, "TYPE"),
-    );
-    if (_options.type !== undefined) {
-      assert(_options.type, assertString, (type) =>
-        helpers.errorMessage(ctx, `Invalid type for options.type: ${type}. Should be string.`, "TYPE"),
-      );
-      options.type = _options.type;
-      const validTypes = ["boolean", "text", "select"];
-      if (!["boolean", "text", "select"].includes(options.type)) {
-        throw helpers.errorMessage(
-          ctx,
-          `Invalid value for options.type: ${options.type}. Must be one of ${validTypes.join(", ")}.`,
-        );
-      }
-      if (options.type === "select") {
-        assert(_options.choices, assertArray, (type) =>
-          helpers.errorMessage(
-            ctx,
-            `Invalid type for options.choices: ${type}. If options.type is "select", options.choices must be an array.`,
-            "TYPE",
-          ),
-        );
-        options.choices = _options.choices.map((choice, i) => helpers.string(ctx, `options.choices[${i}]`, choice));
-      }
-    }
-    return new Promise(function (resolve) {
-      PromptEvent.emit({
-        txt: txt,
-        options,
-        resolve: resolve,
-      });
-    });
-  },
-  wget: async (ctx, _url, _target, _host?) => {
-    const url = helpers.string(ctx, "url", _url);
-    const target = helpers.filePath(ctx, "target", _target);
-    const [server, host] = helpers.getServer(ctx, _host);
-    if (!target || (!hasTextExtension(target) && !hasScriptExtension(target))) {
-      helpers.log(ctx, () => `Invalid target file: '${target}'. Must be a script or text file.`);
-      return false;
-    }
-    if (!server) {
-      return false;
-    }
-    let response: Response;
-    try {
-      response = await fetch(url);
-    } catch (error) {
-      /**
-       * Properties in error are not enumerable, so JSON.stringify(error) returns "{}". We need to explicitly specify
-       * the properties in the "replacer" parameter of JSON.stringify. We can do it by using Object.getOwnPropertyNames.
-       *
-       * Ref:
-       * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
-       * - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertyNames
-       * - https://stackoverflow.com/q/18391212
-       */
-      helpers.log(ctx, () => JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      return false;
-    }
-    if (response.status !== 200) {
-      helpers.log(ctx, () => `wget failed. HTTP code: ${response.status}.`);
-      return false;
-    }
-    const writeResult = server.writeToContentFile(target, await response.text());
-    if (writeResult.overwritten) {
-      helpers.log(ctx, () => `Successfully retrieved content and overwrote '${target}' on '${host}'`);
-    } else {
-      helpers.log(ctx, () => `Successfully retrieved content to new file '${target}' on '${host}'`);
-    }
-    return true;
-  },
-  getFavorToDonate: () => {
-    return Math.floor(CONSTANTS.BaseFavorToDonate * currentNodeMults.FavorToDonateToFaction);
-  },
-  getPlayer: () => {
-    const data = {
-      // Person
-      hp: { ...Player.hp },
-      skills: { ...Player.skills },
-      exp: { ...Player.exp },
-      mults: { ...Player.mults },
-      city: Player.city,
-      // Player-specific
-      numPeopleKilled: Player.numPeopleKilled,
-      money: Player.money,
-      location: Player.location,
-      totalPlaytime: Player.totalPlaytime,
-      jobs: { ...Player.jobs },
-      factions: Player.factions.slice(),
-      entropy: Player.entropy,
-      karma: Player.karma,
-    };
-    return data;
-  },
-  getMoneySources: () => ({
-    sinceInstall: Object.assign({}, Player.moneySourceA),
-    sinceStart: Object.assign({}, Player.moneySourceB),
-  }),
-  atExit: (ctx, callback, _id) => {
-    const id = _id ? helpers.string(ctx, "id", _id) : "default";
-    assertFunctionWithNSContext(ctx, "callback", callback);
-    (ctx.workerScript.atExit ??= new Map()).set(id, callback);
-  },
-  mv: (ctx, _host, _source, _destination) => {
-    const [server, host] = helpers.getServer(ctx, _host);
-    if (!server) {
-      return;
-    }
-    const sourcePath = helpers.filePath(ctx, "source", _source);
-    const destinationPath = helpers.filePath(ctx, "destination", _destination);
-
-    if (
-      (!hasTextExtension(sourcePath) && !hasScriptExtension(sourcePath)) ||
-      (!hasTextExtension(destinationPath) && !hasScriptExtension(destinationPath))
-    ) {
-      throw helpers.errorMessage(
-        ctx,
-        `'mv' can only be used on scripts (.js, .jsx, .ts, .tsx) and text files (.txt, .json, .css)`,
-      );
-    }
-    if (sourcePath === destinationPath) {
-      helpers.log(ctx, () => "WARNING: Did nothing, source and destination paths were the same.");
-      return;
-    }
-    const sourceContentFile = server.getContentFile(sourcePath);
-    if (!sourceContentFile) {
-      throw helpers.errorMessage(ctx, `Source text file ${sourcePath} does not exist on ${host}`);
-    }
-    const success = sourceContentFile.deleteFromServer(server);
-    if (!success) {
-      helpers.log(
-        ctx,
-        () =>
-          `ERROR: Failed. Was unable to remove file ${sourcePath} from its original location. If ${sourcePath} is a script, make sure that it is NOT running before trying to use 'mv' on it.`,
-      );
-      return;
-    }
-    const { overwritten } = server.writeToContentFile(destinationPath, sourceContentFile.content);
-    if (overwritten) {
-      helpers.log(ctx, () => `WARNING: Overwriting file ${destinationPath} on ${host}`);
-    }
-    helpers.log(ctx, () => `Moved ${sourcePath} to ${destinationPath} on ${host}`);
-  },
-  getResetInfo: () => ({
-    lastAugReset: Player.lastAugReset,
-    lastNodeReset: Player.lastNodeReset,
-    currentNode: Player.bitNodeN,
-    ownedAugs: new Map(Player.augmentations.map((aug) => [aug.name, aug.level])),
-    ownedSF: new Map(
-      [...Player.activeSourceFiles].filter(([__, activeLevel]) => {
-        return activeLevel > 0;
-      }),
-    ),
-    bitNodeOptions: {
-      ...Player.bitNodeOptions,
-      sourceFileOverrides: new Map(Player.bitNodeOptions.sourceFileOverrides),
     },
-  }),
-  getFunctionRamCost: (ctx, _name) => {
-    const name = helpers.string(ctx, "name", _name);
-    if (name === "baseCost") {
-      return RamCostConstants.Base;
-    }
-    return getRamCost(name.split("."), true);
-  },
-  tprintRaw: (_, value) => {
-    Terminal.printRaw(wrapUserNode(value));
-  },
-  printRaw: (ctx, value) => {
-    ctx.workerScript.print(wrapUserNode(value));
-  },
-  dynamicImport: async (ctx, value) => {
-    const path = helpers.scriptPath(ctx, "path", value);
-    const server = ctx.workerScript.getServer();
-    const script = server.getContentFile(path);
+    memoryReallocation: (ctx, _host): Promise<DarknetResult> => {
+      const targetHost = helpers.string(ctx, "host", _host ?? ctx.workerScript.hostname);
+      const serverCheck = checkDarknetServer(ctx, targetHost, {
+        requireDirectConnection: true,
+        requireAdminRights: true,
+      });
+      if (!serverCheck.success) {
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: serverCheck.code,
+          message: serverCheck.message,
+        }));
+      }
+      const server = serverCheck.server;
 
-    if (!script) throw helpers.errorMessage(ctx, `Script was not found\nPath: ${path}`);
+      if (server.blockedRam <= 0) {
+        logger(ctx)(`Server ${server.hostname} has no host-owned ram left to reallocate.`);
+        return helpers.netscriptDelay(ctx, 100).then(() => ({
+          success: false,
+          code: ResponseCodeEnum.NoBlockRAM,
+          message: GenericResponseMessage.NoBlockRAM,
+        }));
+      }
 
-    //We validated the path as ScriptFilePath and made sure script is not null
-    //Script **must** be a script at this point
-    return compile(script as Script, server.scripts);
-  },
-  flags: (ctx, ...args) => Flags(ctx, false)(...args),
-  heart: { break: () => Player.karma },
-  ...NetscriptExtra(),
-};
+      logger(ctx)(`Attempting to liberate RAM from '${server.hostname}'s owner ...`);
+      const delayTime = Math.max(8000 * (500 / (500 + Player.skills.charisma)), 200);
 
-// Removed functions
-setRemovedFunctions(ns, {
-  getServerRam: { version: "2.2.0", replacement: "getServerMaxRam and getServerUsedRam" },
-  nFormat: {
-    version: "3.0.0",
-    replacement: "ns.format.number(), ns.format.ram(), ns.format.percent(), or JS built-in objects/functions",
+      return helpers.netscriptDelay(ctx, delayTime).then(() => {
+        const serverCheck = checkDarknetServer(ctx, targetHost, {
+          requireDirectConnection: true,
+          requireAdminRights: true,
+        });
+        if (!serverCheck.success) {
+          return helpers.netscriptDelay(ctx, 100).then(() => ({
+            success: false,
+            code: serverCheck.code,
+            message: serverCheck.message,
+          }));
+        }
+        const server = serverCheck.server;
+        if (server.blockedRam <= 0) {
+          logger(ctx)(`Server ${server.hostname} has no host-owned ram left to reallocate.`);
+          return {
+            success: false,
+            code: ResponseCodeEnum.NoBlockRAM,
+            message: GenericResponseMessage.NoBlockRAM,
+          };
+        }
+        return handleRamBlockRemoved(ctx, server);
+      });
+    },
+    getBlockedRam: (ctx, _host): number => {
+      const targetHost = helpers.string(ctx, "host", _host ?? ctx.workerScript.hostname);
+      const serverCheck = checkDarknetServer(ctx, targetHost);
+      if (!serverCheck.success) {
+        return 0;
+      }
+      return serverCheck.server.blockedRam;
+    },
+    getDepth: (ctx, _host): number => {
+      const targetHost = helpers.string(ctx, "host", _host ?? ctx.workerScript.hostname);
+      const serverCheck = checkDarknetServer(ctx, targetHost);
+      if (!serverCheck.success) {
+        return -1;
+      }
+      return serverCheck.server.depth;
+    },
+    promoteStock: (ctx: NetscriptContext, _symbol): Promise<DarknetResult> => {
+      if (!Player.hasTixApiAccess) {
+        throw helpers.errorMessage(ctx, `You don't have TIX API Access! Cannot use ${ctx.function}()`);
+      }
+      const symbol = helpers.string(ctx, "symbol", _symbol);
+      const stock = getStockFromSymbol(ctx, symbol);
+      expectRunningOnDarknetServer(ctx);
+      expectDarknetAccess(ctx);
+
+      const waitTime = Math.max(8000 * (600 / (600 + Player.skills.charisma)), 200);
+      logger(ctx)(
+        `Spreading ${stock.name} stock propaganda to raise volatility... (Est: ${formatNumber(waitTime / 1000, 1)}s)`,
+      );
+
+      return helpers.netscriptDelay(ctx, waitTime).then(() => {
+        const threads = ctx.workerScript.scriptRef.threads;
+        const promotionAmount = threads * ((500 + Player.skills.charisma) / 500);
+        DarknetState.stockPromotions[symbol] = (DarknetState.stockPromotions[symbol] ?? 0) + promotionAmount;
+
+        const chaXp = Player.mults.charisma_exp * threads * 10 * ((200 + Player.skills.charisma) / 200);
+        Player.gainCharismaExp(chaXp);
+
+        logger(ctx)(`Spread promotion for ${stock.name}. (Gained ${formatNumber(chaXp, 1)} cha xp)`);
+        return {
+          success: true,
+          code: ResponseCodeEnum.Success,
+          message: GenericResponseMessage.Success,
+        };
+      });
+    },
+    phishingAttack: (ctx: NetscriptContext): Promise<DarknetResult> => {
+      const waitTime = getPhishingAttackSpeed();
+      const server = expectRunningOnDarknetServer(ctx);
+      expectDarknetAccess(ctx);
+
+      return helpers.netscriptDelay(ctx, waitTime).then(() => {
+        return handlePhishingAttack(ctx, server);
+      });
+    },
+    getDarknetInstability: (ctx) => {
+      expectDarknetAccess(ctx);
+      return {
+        authenticationDurationMultiplier: getBackdoorAuthTimeDebuff(),
+        authenticationTimeoutChance: getTimeoutChance(),
+      };
+    },
+    nextMutation: (ctx) => {
+      expectDarknetAccess(ctx);
+      return DarknetState.nextMutation;
+    },
+    getServerRequiredCharismaLevel: (ctx, _host): number => {
+      const targetHost = helpers.string(ctx, "host", _host);
+      const serverCheck = checkDarknetServer(ctx, targetHost);
+      if (!serverCheck.success) {
+        return -1;
+      }
+      return serverCheck.server.requiredCharismaSkill;
+    },
+    labreport: async (ctx) => {
+      expectDarknetAccess(ctx);
+      expectRunningOnDarknetServer(ctx);
+
+      const lab = getLabyrinthDetails().lab;
+      if (!lab) {
+        const status = "You feel lost...";
+        logger(ctx)(status);
+        return {
+          success: false,
+          message: status,
+        };
+      }
+
+      const currentServer = getDarknetServerOrThrow(ctx.workerScript.hostname);
+      if (!isDirectConnected(currentServer, lab)) {
+        const status = "You feel disconnected...";
+        logger(ctx)(status);
+        return {
+          success: false,
+          message: status,
+        };
+      }
+
+      const pid = ctx.workerScript.pid;
+      const authenticationTime = calculateAuthenticationTime(lab, Player, ctx.workerScript.scriptRef.threads);
+      await helpers.netscriptDelay(ctx, authenticationTime);
+
+      return getLabyrinthLocationReport(pid);
+    },
+    labradar: async (ctx) => {
+      expectDarknetAccess(ctx);
+      expectRunningOnDarknetServer(ctx);
+
+      const lab = getLabyrinthDetails().lab;
+      if (!lab) {
+        const status = "You feel blind...";
+        logger(ctx)(status);
+        return {
+          success: false,
+          message: status,
+        };
+      }
+
+      const currentServer = getDarknetServerOrThrow(ctx.workerScript.hostname);
+      if (!isDirectConnected(currentServer, lab)) {
+        const status = "You feel disconnected...";
+        logger(ctx)(status);
+        return {
+          success: false,
+          message: status,
+        };
+      }
+
+      const pid = ctx.workerScript.pid;
+      const authenticationTime = calculateAuthenticationTime(lab, Player, ctx.workerScript.scriptRef.threads);
+      await helpers.netscriptDelay(ctx, authenticationTime);
+
+      const [x, y] = getPositionInLab(pid);
+      return {
+        success: true,
+        message: getSurroundingsVisualized(getLabMaze(), x, y, 3, true, true),
+      };
+    },
+  };
+}
+
+export const getDarknetPropertiesForDeprecationSupport = (dnetServer: DarknetServerData) => ({
+  depth: {
+    identifier: "ns.getServer().depth",
+    message: "Use ns.dnet.getServerDetails().depth instead.",
+    value: isLabyrinthServer(dnetServer.hostname) ? labData[dnetServer.hostname].depth : dnetServer.depth,
   },
-  getTimeSinceLastAug: {
-    version: "3.0.0",
-    replacement: "Date.now() - ns.getResetInfo().lastAugReset",
+  modelId: {
+    identifier: "ns.getServer().modelId",
+    message: "Use ns.dnet.getServerDetails().modelId instead.",
+    value: dnetServer.modelId,
   },
-  formatNumber: {
-    version: "3.0.0",
-    replacement: "ns.format.number()",
+  hasStasisLink: {
+    identifier: "ns.getServer().hasStasisLink",
+    message: "Use ns.dnet.getServerDetails().hasStasisLink instead.",
+    value: dnetServer.hasStasisLink,
   },
-  formatRam: {
-    version: "3.0.0",
-    replacement: "ns.format.ram()",
+  blockedRam: {
+    identifier: "ns.getServer().blockedRam",
+    message: "Use ns.dnet.getServerDetails().blockedRam instead.",
+    value: dnetServer.blockedRam,
   },
-  formatPercent: {
-    version: "3.0.0",
-    replacement: "ns.format.percent()",
+  staticPasswordHint: {
+    identifier: "ns.getServer().staticPasswordHint",
+    message: "Use ns.dnet.getServerDetails().staticPasswordHint instead.",
+    value: dnetServer.staticPasswordHint,
   },
-  tFormat: {
-    version: "3.0.0",
-    replacement: "ns.format.time()",
+  passwordHintData: {
+    identifier: "ns.getServer().passwordHintData",
+    message: "Use ns.dnet.getServerDetails().passwordHintData instead.",
+    value: dnetServer.passwordHintData,
   },
-  tail: {
-    version: "3.0.0",
-    replacement: "ns.ui.openTail()",
+  difficulty: {
+    identifier: "ns.getServer().difficulty",
+    message: "Use ns.dnet.getServerDetails().difficulty instead.",
+    value: dnetServer.difficulty,
   },
-  moveTail: {
-    version: "3.0.0",
-    replacement: "ns.ui.moveTail()",
+  requiredCharismaSkill: {
+    identifier: "ns.getServer().requiredCharismaSkill",
+    message: "Use ns.dnet.getServerDetails().requiredCharismaSkill instead.",
+    value: dnetServer.requiredCharismaSkill,
   },
-  resizeTail: {
-    version: "3.0.0",
-    replacement: "ns.ui.resizeTail()",
+  logTrafficInterval: {
+    identifier: "ns.getServer().logTrafficInterval",
+    message: "Use ns.dnet.getServerDetails().logTrafficInterval instead.",
+    value: dnetServer.logTrafficInterval,
   },
-  closeTail: {
-    version: "3.0.0",
-    replacement: "ns.ui.closeTail()",
-  },
-  setTitle: {
-    version: "3.0.0",
-    replacement: "ns.ui.setTailTitle()",
-  },
-  getPurchasedServerCost: {
-    version: "3.0.0",
-    replacement: "ns.cloud.getServerCost()",
-  },
-  purchaseServer: {
-    version: "3.0.0",
-    replacement: "ns.cloud.purchaseServer()",
-  },
-  getPurchasedServerUpgradeCost: {
-    version: "3.0.0",
-    replacement: "ns.cloud.getServerUpgradeCost()",
-  },
-  upgradePurchasedServer: {
-    version: "3.0.0",
-    replacement: "ns.cloud.upgradeServer()",
-  },
-  renamePurchasedServer: {
-    version: "3.0.0",
-    replacement: "ns.cloud.renameServer()",
-  },
-  deleteServer: {
-    version: "3.0.0",
-    replacement: "ns.cloud.deleteServer()",
-  },
-  getPurchasedServers: {
-    version: "3.0.0",
-    replacement: "ns.cloud.getServerNames()",
-  },
-  getPurchasedServerLimit: {
-    version: "3.0.0",
-    replacement: "ns.cloud.getServerLimit()",
-  },
-  getPurchasedServerMaxRam: {
-    version: "3.0.0",
-    replacement: "ns.cloud.getRamLimit()",
+  isStationary: {
+    identifier: "ns.getServer().isStationary",
+    message: "Use ns.dnet.getServerDetails().isStationary instead.",
+    value: dnetServer.isStationary,
   },
 });
-
-export function NetscriptFunctions(ws: WorkerScript): NSFull {
-  return NSProxy(ws, ns, [], { args: ws.scriptRef.args.slice(), pid: ws.pid, enums });
-}
-
-const possibleLogs = Object.fromEntries(getFunctionNames(ns, "").map((a) => [a, true]));
-possibleLogs.ALL = true;
-
-// We reuse this object for *all* scripts that disable all keys, to prevent memory growth.
-// Any script that needs a custom set of values will use a fresh object.
-const allDisabled = { ALL: true } as const;
-
-/** Provides an array of all function names on a nested object */
-function getFunctionNames(obj: object, prefix: string): string[] {
-  const functionNames: string[] = [];
-  for (const [key, value] of Object.entries(obj)) {
-    if (key === "args") {
-      continue;
-    } else if (typeof value === "function") {
-      functionNames.push(prefix + key);
-    } else if (typeof value === "object") {
-      functionNames.push(...getFunctionNames(value as object, `${prefix}${key}.`));
-    }
-  }
-  return functionNames;
-}

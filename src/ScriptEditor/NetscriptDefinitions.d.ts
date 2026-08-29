@@ -7313,6 +7313,11 @@ export interface NS {
   readonly grafting: Grafting;
 
   /**
+   * Namespace for {@link Boss | boss} functions. Contains spoilers.
+   */
+  readonly boss: Boss;
+
+  /**
    * Arguments passed into the script.
    *
    * These arguments can be accessed as a normal array by using the `[]` operator
@@ -9768,6 +9773,32 @@ type ProgramNameEnumType = {
 type ProgramName = _ValueOf<ProgramNameEnumType>;
 
 /** @public */
+type MeetingTitleEnumType = {
+  DailyStandup: "Daily Standup";
+  ComplianceTraining: "Compliance Training";
+  CheckEmail: "Check Email";
+  Brainstorm: "Group Brainstorm Session";
+  NewInitiative: "Outline New Initiative";
+  Interview: "Candidate Interview";
+  SlidePresentation: "Slide Presentation";
+  SoftwareDemo: "Software Demo";
+  Lunch: MeetingFixedBreaksEnumType["Lunch"];
+  Recess: MeetingFixedBreaksEnumType["Recess"];
+};
+
+/** @public */
+type MeetingTitle = _ValueOf<MeetingTitleEnumType>;
+
+/** @public */
+type MeetingFixedBreaksEnumType = {
+  Lunch: "Lunch";
+  Recess: "Recess";
+};
+
+/** @public */
+type MeetingFixedBreaks = _ValueOf<MeetingFixedBreaksEnumType>;
+
+/** @public */
 type CodingContractNameEnumType = {
   FindLargestPrimeFactor: "Find Largest Prime Factor";
   SubarrayWithMaximumSum: "Subarray with Maximum Sum";
@@ -9883,7 +9914,205 @@ type NSEnums = {
   DarknetResponseCode: DarknetResponseCodeType;
   ProgramName: ProgramNameEnumType;
   GangTaskName: GangTaskNameEnumType;
+  MeetingTitle: MeetingTitleEnumType;
 };
+
+/**
+ * Per-stat bonuses, either attached to a single meeting or tabulated across a whole calendar.
+ *
+ * The meaning of a value depends on where the record came from:
+ *
+ * - On a {@link Meeting}, values are additive contributions, and 0 means "no bonus to this stat".
+ * - From {@link BossCalendar.getPendingRewards} or {@link Boss.getAppliedRewards}, values are
+ *   multipliers on your work gains, and 1 means "no change to this stat".
+ *
+ * @public
+ */
+export interface MeetingBonuses {
+  money: number;
+  reputation: number;
+  hackExp: number;
+  strExp: number;
+  defExp: number;
+  dexExp: number;
+  agiExp: number;
+  chaExp: number;
+}
+
+/** Defines a Meeting */
+export interface Meeting {
+  id: number;
+  title: MeetingTitle;
+  startTime: number;
+  finishTime: number;
+  /** What attending this meeting contributes. Additive; 0 means no bonus to that stat. */
+  attendanceMults: MeetingBonuses;
+  /** What skipping this meeting costs. Currently generated as all zeroes. */
+  nonAttendanceMults?: MeetingBonuses;
+}
+
+/** Company Calendar */
+export interface BossCalendar {
+  /**
+   * Get all the meetings this round.
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  getAppointments(): Meeting[];
+
+  /**
+   * Attend a meeting by its ID.
+   *
+   * @param meetingID - The ID of the meeting to attend
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  rsvp(meetingID: number): void;
+
+  /**
+   * Returns all the meetings' IDs you're attending to this round.
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  getRsvps(): number[];
+
+  /**
+   * Cancel the attendance to the specified meeting
+   *
+   * @param meetingID - the ID of the meeting to cancel
+   *
+   * @remarks
+   * RAM cost: 2 GB
+   */
+  cancelMeetingAttendance(meetingID: number): void;
+
+  /**
+   * Returns true if the meeting is attended, false otherwise
+   */
+  isMeetingAttended(meetingID: number): boolean;
+
+  /**
+   * Rewards the current RSVPs would provide next round.
+   *
+   * @remarks
+   * RAM cost: 0.2 GB
+   *
+   * These move every time you RSVP or cancel, and they are *not* what you are being paid right now
+   * - see {@link Boss.getAppliedRewards}. Values are multipliers on your work gains, so 1 means no
+   * change to that stat.
+   */
+  getPendingRewards(): MeetingBonuses;
+}
+
+/** Agent API. Allows you to interact with your agents */
+export interface BossAgents {
+  /**
+   * Returns the number of agents you own
+   *
+   * @remarks
+   * RAM cost: 0.2 GB
+   */
+  getNumAgents(): number;
+
+  /**
+   * Hires a new agent
+   *
+   * @remarks
+   * RAM cost: 3 GB
+   */
+  hireAgent(): void;
+}
+
+/**
+ * Boss API
+ *
+ * @remarks
+ * You need SF16.1 in order to access this API
+ */
+export interface Boss {
+  /** Solve a puzzle
+   *
+   * @remarks
+   * RAM cost: 10 GB
+   *
+   * @param puzzleID - ID of the puzzle to solve
+   * @param solution - The solution to the puzzle
+   * @returns A string with a list of the rewards or an empty string on failure
+   */
+  solvePuzzle(puzzleID: number, solution: string): string;
+
+  /**
+   * Changes your fixed schedule
+   *
+   * @param fixedBreak - the break type you want (lunch/recess)
+   * @param timezone - the timezone to move the break to
+   *
+   * @remarks
+   * RAM cost: 4 GB
+   * Change param timezone!!!
+   */
+  changeFixedSchedule(fixedBreak: MeetingFixedBreaks, timezone: Date): void;
+
+  /**
+   * Adds a recess break time to your schedule
+   *
+   * @param timezone - the timezone to add the break to
+   *
+   * @remarks
+   * RAM cost: 4 GB
+   */
+  addBreakTime(timezone: Date): void;
+
+  /**
+   * Checks if you have access to the API
+   *
+   * @remarks
+   * RAM cost: 0.1 GB
+   * Does not require API access
+   */
+  hasAccess(): boolean;
+
+  /**
+   * Waits for the current round to end and its rewards to lock in.
+   *
+   * @remarks
+   * RAM cost: 0 GB
+   *
+   * @returns Promise that resolves to the number of milliseconds that were processed in the round
+   * that just ended.
+   *
+   * @example
+   * ```js
+   * while (true) {
+   *   await ns.boss.nextUpdate();
+   *   // A fresh calendar is up and your last one is now being paid out.
+   *   for (const meeting of solve(ns.boss.calendar.getAppointments())) {
+   *     ns.boss.calendar.rsvp(meeting.id);
+   *   }
+   * }
+   * ```
+   */
+  nextUpdate(): Promise<number>;
+
+  /**
+   * Rewards currently multiplying your work gains.
+   *
+   * @remarks
+   * RAM cost: 0.2 GB
+   *
+   * These were locked in at the last rollover from whatever was pending at the time, and they hold
+   * steady for the whole round. Values are multipliers, so 1 means no change to that stat.
+   */
+  getAppliedRewards(): MeetingBonuses;
+
+  /** Calendar */
+  calendar: BossCalendar;
+  /** Agents */
+  agent: BossAgents;
+}
 
 /**
  * Corporation Office API
