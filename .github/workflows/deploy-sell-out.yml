@@ -9,7 +9,7 @@ on:
         description: Enable dev mode (enable dev menu, disable minification, etc.)
         type: boolean
         required: false
-        default: false
+        default: true
 
 permissions:
   contents: read
