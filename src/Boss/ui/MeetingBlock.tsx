@@ -60,7 +60,6 @@ export function MeetingBlock({ meeting, dayStart, dayEnd, attended, onClick }: M
           lineHeight: 1.2,
           whiteSpace: "nowrap",
           textOverflow: "ellipsis",
-          overflow: "hidden",
           maxWidth: "100%",
         }}
       >
