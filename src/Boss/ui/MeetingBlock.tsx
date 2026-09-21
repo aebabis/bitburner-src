@@ -1,8 +1,9 @@
 import React from "react";
-import { ButtonBase, Typography } from "@mui/material";
+import { ButtonBase, Tooltip, Typography } from "@mui/material";
 import type { Meeting } from "@nsdefs";
 
 import { Settings } from "../../Settings/Settings";
+import { TypographyProps } from '@mui/system';
 
 /** Formats an hour-decimal (8.25) as a clock time (08:15). */
 export function formatMeetingTime(time: number): string {
@@ -11,6 +12,28 @@ export function formatMeetingTime(time: number): string {
   const minute = (totalMinutes % 60).toString().padStart(2, '0');
   return `${hour}:${minute}`;
 }
+
+const Indicator = ({ color, text, bonusName, ...props }: { color: string, text: string, bonusName: string } & TypographyProps ) => (
+  <Tooltip title={`This meeting gives a bonus to ${bonusName}`}>
+    <Typography sx={{ color }} component='span' {...props}>{text}</Typography>
+  </Tooltip>
+);
+
+const StatIndicators = ({ meeting } : { meeting: Meeting }) => {
+  const { money, reputation, hackExp, strExp, defExp, dexExp, agiExp, chaExp } = meeting.attendanceMults;
+  const hasHackBonus = hackExp > 0;
+  const hasCombatBonus = [strExp, defExp, dexExp, agiExp].some((val) => val > 0);
+  const hasRepBonus = reputation > 0;
+  const hasChaBonus = chaExp > 0;
+  const hasMoneyBonus = money > 0;
+  return <>
+    {hasHackBonus && <Indicator color={Settings.theme.hack} text='◻' bonusName='hacking experience' fontWeight='bold' />}
+    {hasCombatBonus && <Indicator color={Settings.theme.combat} text='◻' bonusName='one or more types of combat experience' />}
+    {hasRepBonus && <Indicator color={Settings.theme.combat} text='◇' bonusName='reputation gained' />}
+    {hasChaBonus && <Indicator color={Settings.theme.cha} text='◼' bonusName='charisma experience' />}
+    {hasMoneyBonus && <Indicator color={Settings.theme.money} text='$' bonusName='income' fontSize='.75em' />}
+  </>
+};
 
 interface MeetingBlockProps {
   meeting: Meeting;
@@ -63,7 +86,7 @@ export function MeetingBlock({ meeting, dayStart, dayEnd, attended, onClick }: M
           maxWidth: "100%",
         }}
       >
-        {meeting.title}
+        {meeting.title} <StatIndicators meeting={meeting} />
       </Typography>
       <Typography sx={{ color: "inherit", fontSize: "0.75em", lineHeight: 1.2 }}>
         {formatMeetingTime(meeting.startTime)} - {formatMeetingTime(meeting.finishTime)}
