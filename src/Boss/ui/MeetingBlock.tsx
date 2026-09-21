@@ -3,7 +3,7 @@ import { ButtonBase, Tooltip, Typography } from "@mui/material";
 import type { Meeting } from "@nsdefs";
 
 import { Settings } from "../../Settings/Settings";
-import { TypographyProps } from '@mui/system';
+import { Box, TypographyProps } from '@mui/system';
 
 /** Formats an hour-decimal (8.25) as a clock time (08:15). */
 export function formatMeetingTime(time: number): string {
@@ -26,13 +26,13 @@ const StatIndicators = ({ meeting } : { meeting: Meeting }) => {
   const hasRepBonus = reputation > 0;
   const hasChaBonus = chaExp > 0;
   const hasMoneyBonus = money > 0;
-  return <>
+  return <Box sx={{display: 'inline-flex', gap: '.2em', alignItems: 'baseline'}}>
     {hasHackBonus && <Indicator color={Settings.theme.hack} text='◻' bonusName='hacking experience' fontWeight='bold' />}
-    {hasCombatBonus && <Indicator color={Settings.theme.combat} text='◻' bonusName='one or more types of combat experience' />}
+    {hasCombatBonus && <Indicator color={Settings.theme.combat} text='⚔' bonusName='one or more types of combat experience' />}
     {hasRepBonus && <Indicator color={Settings.theme.combat} text='◇' bonusName='reputation gained' />}
     {hasChaBonus && <Indicator color={Settings.theme.cha} text='◼' bonusName='charisma experience' />}
-    {hasMoneyBonus && <Indicator color={Settings.theme.money} text='$' bonusName='income' fontSize='.75em' />}
-  </>
+    {hasMoneyBonus && <Indicator color={Settings.theme.money} text='$' bonusName='income' fontSize='1em' />}
+  </Box>
 };
 
 interface MeetingBlockProps {
