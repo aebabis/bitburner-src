@@ -21,17 +21,17 @@ const Indicator = ({ color, text, bonusName, ...props }: { color: string, text: 
 
 const StatIndicators = ({ meeting } : { meeting: Meeting }) => {
   const { money, reputation, hackExp, strExp, defExp, dexExp, agiExp, chaExp } = meeting.attendanceMults;
+  const hasMoneyBonus = money > 0;
+  const hasRepBonus = reputation > 0;
   const hasHackBonus = hackExp > 0;
   const hasCombatBonus = [strExp, defExp, dexExp, agiExp].some((val) => val > 0);
-  const hasRepBonus = reputation > 0;
   const hasChaBonus = chaExp > 0;
-  const hasMoneyBonus = money > 0;
   return <Box sx={{display: 'inline-flex', gap: '.2em', alignItems: 'baseline'}}>
+    {hasMoneyBonus && <Indicator color={Settings.theme.money} text='$' bonusName='income' fontSize='1em' />}
+    {hasRepBonus && <Indicator color={Settings.theme.combat} text='◇' bonusName='reputation gained' />}
     {hasHackBonus && <Indicator color={Settings.theme.hack} text='◻' bonusName='hacking experience' fontWeight='bold' />}
     {hasCombatBonus && <Indicator color={Settings.theme.combat} text='⚔' bonusName='one or more types of combat experience' />}
-    {hasRepBonus && <Indicator color={Settings.theme.combat} text='◇' bonusName='reputation gained' />}
     {hasChaBonus && <Indicator color={Settings.theme.cha} text='◼' bonusName='charisma experience' />}
-    {hasMoneyBonus && <Indicator color={Settings.theme.money} text='$' bonusName='income' fontSize='1em' />}
   </Box>
 };
 
