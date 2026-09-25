@@ -2,12 +2,13 @@ import { Boss as BossAPI, Meeting, MeetingBonuses } from "@nsdefs";
 import { InternalAPI, NetscriptContext } from "../Netscript/APIWrapper";
 import { helpers } from "../Netscript/NetscriptHelpers";
 import { getEnumHelper } from "../utils/EnumHelper";
-import { Boss, BossPromise, ROUND_LENGTH_MS } from "../Boss/Boss";
+import { Boss, BossPromise } from "../Boss/Boss";
 import { hasCalendarAccess } from "../Boss/access";
 import { isMeetingAttended, toggleMeeting } from "../Boss/placeMeeting";
+import { isDate } from "lodash";
 
 /** Throws unless the player holds a job that comes with a calendar. */
-function checkAccess(ctx: NetscriptContext): void {
+function hasJobOrThrow(ctx: NetscriptContext): void {
   if (!hasCalendarAccess()) {
     throw helpers.errorMessage(ctx, "You need a job at a company to use the boss API.");
   }
@@ -26,49 +27,59 @@ function getMeetingOrThrow(ctx: NetscriptContext, _meetingID: unknown): Meeting 
 export function NetscriptBoss(): InternalAPI<BossAPI> {
   return {
     solvePuzzle: (ctx: NetscriptContext, _puzzleID, _solution): string => {
-      checkAccess(ctx);
+      hasJobOrThrow(ctx);
+      const puzzleID = helpers.number(ctx, "puzzleID", _puzzleID);
+      const solution = helpers.string(ctx, "solution", _solution);
       // Lorem ipsum, no logic... yet.
       return "";
     },
     changeFixedSchedule: (ctx: NetscriptContext, _fixedBreak, _timezone): void => {
-      checkAccess(ctx);
+      hasJobOrThrow(ctx);
       const fixedBreak = getEnumHelper("MeetingFixedBreaks").nsGetMember(ctx, _fixedBreak);
+      const timezone = isDate(_timezone); // correct?
       // Change fixed schedule logic
     },
     addBreakTime: (ctx: NetscriptContext, _timezone): void => {
-      checkAccess(ctx);
+      hasJobOrThrow(ctx);
+      const timezone = isDate(_timezone); // correct?
       // Adding break time logic
     },
     hasAccess: (ctx: NetscriptContext): boolean => {
-      return helpers.checkBossAPIAccess();
+      // doesn't need API access
+      try {
+        helpers.checkBossAPIAccess(ctx);
+      } catch (_) {
+        return false;
+      }
+      return true;
     },
     nextUpdate: (ctx: NetscriptContext): Promise<number> => {
-      checkAccess(ctx);
+      hasJobOrThrow(ctx);
       if (!BossPromise.promise) {
         BossPromise.promise = new Promise<number>((res) => (BossPromise.resolve = res));
       }
       return BossPromise.promise;
     },
     getAppliedRewards: (ctx: NetscriptContext): MeetingBonuses => {
-      checkAccess(ctx);
+      hasJobOrThrow(ctx);
       return structuredClone(Boss.appliedBonuses);
     },
     calendar: {
       getAppointments: (ctx: NetscriptContext): Meeting[] => {
-        checkAccess(ctx);
+        hasJobOrThrow(ctx);
         return structuredClone(Boss.round.meetings);
       },
       rsvp: (ctx: NetscriptContext, _meetingID): void => {
-        checkAccess(ctx);
+        hasJobOrThrow(ctx);
         const meeting = getMeetingOrThrow(ctx, _meetingID);
         if (isMeetingAttended(Boss.round, meeting.id)) {
           throw helpers.errorMessage(ctx, `Meeting ${meeting.id} is already attended.`);
         }
-        // Booking a meeting drops anything it conflicts with. See toggleMeeting.
+        /** Booking a meeting drops anything it conflicts with. See {@link toggleMeeting} */
         Boss.round = toggleMeeting(Boss.round, meeting.id);
       },
       cancelMeetingAttendance: (ctx: NetscriptContext, _meetingID): void => {
-        checkAccess(ctx);
+        hasJobOrThrow(ctx);
         const meeting = getMeetingOrThrow(ctx, _meetingID);
         if (!isMeetingAttended(Boss.round, meeting.id)) {
           throw helpers.errorMessage(ctx, `Meeting ${meeting.id} is not attended.`);
@@ -76,26 +87,26 @@ export function NetscriptBoss(): InternalAPI<BossAPI> {
         Boss.round = toggleMeeting(Boss.round, meeting.id);
       },
       getRsvps: (ctx: NetscriptContext): number[] => {
-        checkAccess(ctx);
+        hasJobOrThrow(ctx);
         return [...Boss.round.attendance];
       },
       isMeetingAttended: (ctx: NetscriptContext, _meetingID): boolean => {
-        checkAccess(ctx);
+        hasJobOrThrow(ctx);
         return isMeetingAttended(Boss.round, getMeetingOrThrow(ctx, _meetingID).id);
       },
       getPendingRewards: (ctx: NetscriptContext): MeetingBonuses => {
-        checkAccess(ctx);
+        hasJobOrThrow(ctx);
         return structuredClone(Boss.pendingBonuses);
       },
     },
     agent: {
       getNumAgents: (ctx: NetscriptContext): number => {
-        checkAccess(ctx);
+        hasJobOrThrow(ctx);
         // Return the number of agents
         return 0;
       },
       hireAgent: (ctx: NetscriptContext): void => {
-        checkAccess(ctx);
+        hasJobOrThrow(ctx);
         // Hire an agent here
       },
     },

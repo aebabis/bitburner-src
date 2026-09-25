@@ -8,8 +8,10 @@ import { Box, TypographyProps } from '@mui/system';
 /** Formats an hour-decimal (8.25) as a clock time (08:15). */
 export function formatMeetingTime(time: number): string {
   const totalMinutes = Math.round(time * 60);
-  const hour = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
-  const minute = (totalMinutes % 60).toString().padStart(2, '0');
+  const hour = Math.floor(totalMinutes / 60)
+    .toString()
+    .padStart(2, "0");
+  const minute = (totalMinutes % 60).toString().padStart(2, "0");
   return `${hour}:${minute}`;
 }
 

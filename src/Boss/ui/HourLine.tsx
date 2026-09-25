@@ -13,7 +13,9 @@ export function HourLine({ hour, dayStart, dayEnd }: HourLineProps): React.React
   const top = (100 * (hour - dayStart)) / (dayEnd - dayStart);
 
   return (
-    <Box sx={{ position: "absolute", top: `${top}%`, width: "100%", borderTop: `1px solid ${Settings.theme.welllight}` }}>
+    <Box
+      sx={{ position: "absolute", top: `${top}%`, width: "100%", borderTop: `1px solid ${Settings.theme.welllight}` }}
+    >
       <Typography
         sx={{
           position: "absolute",
