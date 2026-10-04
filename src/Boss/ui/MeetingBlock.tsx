@@ -84,6 +84,7 @@ export function MeetingBlock({ meeting, dayStart, dayEnd, attended, onClick }: M
           whiteSpace: "nowrap",
           textOverflow: "ellipsis",
           maxWidth: "100%",
+          marginTop: '-.2em',
         }}
       >
         {meeting.title} <StatIndicators meeting={meeting} />
