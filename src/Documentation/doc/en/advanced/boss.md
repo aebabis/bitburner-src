@@ -1,29 +1,45 @@
 # BitNode 16: The Need for a Boss
 
 BitNode 16 takes place on a world where Megacorporations took over the planet's economy, industry, supply chains... and the
-well-desired augmentations. It seems there is no turning back...
-This created the need for Megacorporations: in order to obtain primary resources such as food, water, a house... you had to
-be employed on a company of their own. Criminal bands, hacking factions, rebel leaders... all of them were neutralized in a short period of time, and with them, all the hope for humanity of having back the old ways...
+well-desired augmentations. Rumors say that one corporation made it to steal _The Red Pill_ from the Daedalus faction. It seems there is no turning back...
 
-However, they say there is one thing that you can provide that can prove invaluable to Megacorporations: your security expertise.
+Small corporations, such as VitaLife, Nova Medical and Global Pharmaceutical join together as a faction. Working on one of those
+companies will reward you with a little bit of reputation. Other Faction work remains unaltered.
 
-Man and women from all around the globe put their skills in secret to hack into Megacorporations' mainframes and destroy their
-empire. Various attacks were launched, and all of them failed. Only you can provide them with the security expertise that is
-needed for taking them down once and for all...
+A complete NS API documentation exists [here](../../../../../markdown/bitburner.boss.md).
 
-## Purpose
+### Purpose
 
-In this BitNode, you must work for companies in order to gain reputation with them. The goal is that you climb through
-the company's positions. Each position has its own puzzle you will have to solve in order to prove your skills. You can
-also join their factions in order to acquire augmentations. They are the only ones offering them.
+In this BitNode, jobs have been replaced with a meetings scheduler. You must organize your agenda in order to attend the maximum number of meetings possible. Every attended meeting gives a bonus, but some unattended ones may penalize you. Be warned! You will not be able to attend to all meetings, so choose wisely to which meetings you will attend. Will you be able to make the maximum profit in order to escape this reality?
 
-## Quirks
+### Attendance
 
-- All non-corporative factions will not offer any augmentations except NeuroFlux Governor.
+A Meeting is attended when you click it on the UI or use the API to do so. An attended meeting will provide you with its rewards at
+the end of the round. A meeting can always be cancelled.
+_Note:_ in the API, we use `rsvp` to refer to the act of atttending a specific meeting.
+
+### Agents
+
+...
+
+### Break Time
+
+You have a lunch break locked
+
+### Quirks
+
+- All non-corporative factions will not offer any augmentations except NeuroFlux Governor. The same applies to corporative factions, they do not offer NFG.
 - Climb through the positions of a company by solving coding puzzles. You will still need the required reputation.
 - Various factions will be unlocked.
+- Earnings from other sources except company jobs have been heavily buffed.
 
-## Puzzles
+### API Summary
 
-You will unlock the `boss` API. It lets you create the scripts in order to solve the puzzles needed to climb the positions
-of a company.
+When you applly for a company job and set to work, a calendar appears. You will see all the meetings you can attend in the current
+round. To fetch all the meetings, use `ns.boss.getAppointments()`. To attend a meeting, either click it in the UI or use
+`ns.boss.rsvp()`. You can get all attended meetings using `ns.boss.getRsvps()`, which returns an array of Meeting IDs. You can
+check if a meeting is attended using `ns.boss.isMeetingAttended()` and cancel an attendance with `ns.boss.cancelMeetingAttendance()`. To check the accumulated rewards of the current round, use `ns.getPendingRewards`.
+
+### Useful notes
+
+- The meetings object returned by the API will normally be a `Meeting[]`, but in order to access a specific meeting(s) you must use its ID.

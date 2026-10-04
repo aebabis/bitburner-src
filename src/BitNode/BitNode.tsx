@@ -1174,8 +1174,6 @@ export function getBitNodeMultipliers(n: number, lvl: number): BitNodeMultiplier
         CorporationSoftcap: 0.4,
         CorporationDivisions: 0.4,
 
-        DaedalusAugsRequirement: 30,
-
         BladeburnerRank: 0.15,
         BladeburnerSkillCost: 3.5,
 
